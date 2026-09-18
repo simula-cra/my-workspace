@@ -49,6 +49,10 @@ param(
 
     [string]$ConversationId,
 
+    # 記録の保存先。省略すると runs\<日時>\ を自分で作る。
+    # ループ実行（Invoke-AntigravityLoop.ps1）が試行ごとの場所を指定するために使う。
+    [string]$RunDir,
+
     [switch]$AutoApprove,
 
     [switch]$DryRun
@@ -89,7 +93,7 @@ if (-not $specFull.StartsWith($workFull, [StringComparison]::OrdinalIgnoreCase))
 
 # --- 実行の準備 ---------------------------------------------------------
 $stamp  = Get-Date -Format 'yyyyMMdd-HHmmss'
-$runDir = Join-Path $PSScriptRoot "runs\$stamp"
+$runDir = if ($RunDir) { $RunDir } else { Join-Path $PSScriptRoot "runs\$stamp" }
 if (-not $DryRun) { New-Item -ItemType Directory -Path $runDir -Force | Out-Null }
 
 # プロンプトは1行に保つ（改行入りの長い引数はPowerShell 5.1で壊れやすい）。
