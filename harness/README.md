@@ -46,6 +46,7 @@ PC側で手で走らせるためのもの。
 | `Check-Harness.ps1` | フォルダ・タスクスケジューラ・スタートアップ・.vbsの文字コード・ログ・常駐プロセスを一括点検 | しない |
 | `Fix-StartupChatServer.ps1` | スタートアップに残った旧パスの `start_chat_server.vbs` を削除、またはショートカットに置き換え | する（退避あり） |
 | `AI-Harness_CLAUDE.md_追記案.md` | PC側 `AI-Harness\CLAUDE.md` に足すべき文面 | しない（手で貼る） |
+| [`antigravity/`](antigravity/) | Claude Codeが設計し、実作業をAntigravityの無料枠に出すための委譲キット | する（agyが作業する） |
 
 ## 前提（2026-09-17時点で把握している構成）
 
