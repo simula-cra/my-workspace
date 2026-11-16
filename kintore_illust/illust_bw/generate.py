@@ -87,6 +87,11 @@ def jm(f,c,r=1.25,far=False):
     col=FAR if far else INK
     x,y=c
     f.raw(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="#FFFFFF" fill-opacity="0.85" stroke="{col}" stroke-width="0.5"></circle><path d="M{x:.1f} {y:.1f} L{x+r:.1f} {y:.1f} A{r} {r} 0 0 1 {x:.1f} {y+r:.1f}Z M{x:.1f} {y:.1f} L{x-r:.1f} {y:.1f} A{r} {r} 0 0 1 {x:.1f} {y-r:.1f}Z" fill="{col}"></path>')
+def seam(f,a,c,b,A,B,far=False,shift=0.0):
+    u1=norm(sub(c,a)); u2=norm(sub(b,c)); u=norm(add(u1,u2)); n=(-u[1],u[0])
+    c=add(c,mul(u,shift))
+    p=add(c,mul(n,-A)); q=add(c,mul(n,B))
+    f.raw(f'<line x1="{p[0]:.2f}" y1="{p[1]:.2f}" x2="{q[0]:.2f}" y2="{q[1]:.2f}" stroke="{FAR if far else INK}" stroke-width="0.55" stroke-linecap="round"></line>')
 def side_figure(f,k,far_arm=None,far_leg=None,order='arm_front'):
     if far_leg: f.part(limb([far_leg['heel'],far_leg['ball'],far_leg['toe']],FOOT,1,0.8),True); f.part(limb([k['hip'],far_leg['knee'],far_leg['ank']],LEG),True)
     if far_arm: f.part(limb([k['sh'],far_arm['elb'],far_arm['wr']],ARM),True); f.part(limb([far_arm['wr'],far_arm['fing']],HAND,0.5,0.9),True)
@@ -97,10 +102,16 @@ def side_figure(f,k,far_arm=None,far_leg=None,order='arm_front'):
     f.part(limb(k['torso'],TORSO,0.5,0.7),name='torso')
     f.part(limb([k['sh'],k['elb'],k['wr']],ARM,0.6,0.5),name='arm')
     f.part(limb([k['wr'],k['fing']],HAND,0.5,0.9),name='hand')
-    if far_leg: jm(f,far_leg['knee'],1.1,True); jm(f,far_leg['ank'],0.9,True)
-    if far_arm: jm(f,far_arm['elb'],1.0,True)
     tor=k['torso']
-    for c,r in ((tor[0],1.0),(tor[1],1.2),(k['hip'],1.5),(k['knee'],1.3),(k['ank'],1.0),(k['sh'],1.4),(k['elb'],1.15),(k['wr'],0.9)): jm(f,c,r)
+    if far_leg: seam(f,k['hip'],far_leg['knee'],far_leg['ank'],2.9,3.3,True)
+    if far_arm: seam(f,k['sh'],far_arm['elb'],far_arm['wr'],2.0,1.9,True)
+    seam(f,tor[0],tor[1],tor[2],4.3,5.6)
+    seam(f,tor[1],k['hip'],k['knee'],3.9,3.9,shift=2.6)
+    seam(f,k['hip'],k['knee'],k['ank'],2.7,2.9)
+    seam(f,k['knee'],k['ank'],k['toe'],1.5,1.5)
+    seam(f,tor[0],k['sh'],k['elb'],3.0,3.1,shift=1.6)
+    seam(f,k['sh'],k['elb'],k['wr'],1.9,1.9)
+    seam(f,k['elb'],k['wr'],k['fing'],1.3,1.4)
 S={}
 # ---- pushup 1
 f=Fig('pu1'); f.raw(FLOOR_H)
@@ -138,10 +149,10 @@ S['squat_1']=f.svg('0 0 60 100','スクワット 良い例')
 # ---- squat NG
 f=Fig('sq2'); f.raw(FLOOR_V); f.raw(NGT)
 f.raw('<line x1="40.5" y1="62" x2="40.5" y2="94.6" stroke="#6E6E6E" stroke-width="0.7" stroke-dasharray="1.6 1.4"></line>')
-hip=(25,71); N=(31,47.5); mid=(16.5,57.5); hc=(38.2,49.5); ht=72
-k=dict(sh=(32,50.5),elb=(34.5,62),wr=(39,71),fing=(41,77),hip=hip,knee=(44.5,77.5),ank=(29.5,90.6),heel=(26,92.6),ball=(36.5,94.1),toe=(40.5,94.6),
+hip=(24,71); N=(32.5,47.5); mid=(23,58.5); hc=(39.5,47.5); ht=58
+k=dict(sh=(33.5,50.5),elb=(36,62),wr=(40.5,71),fing=(42.5,77),hip=hip,knee=(44.5,77.5),ank=(29.5,90.6),heel=(26,92.6),ball=(36.5,94.1),toe=(40.5,94.6),
  N=N,torso=[N,mid,hip],head=hc,ht=ht,hc_neck=hpt(hc,ht,-1.2,3.2))
-side_figure(f,k,far_arm=dict(elb=(32.5,62.5),wr=(36.5,71.5),fing=(38.5,77.5)),far_leg=dict(knee=(42,78.5),ank=(27,90.6),heel=(23.6,92.6),ball=(34,94.1),toe=(38,94.6)))
+side_figure(f,k,far_arm=dict(elb=(34,62.5),wr=(38,71.5),fing=(40,77.5)),far_leg=dict(knee=(42,78.5),ank=(27,90.6),heel=(23.6,92.6),ball=(34,94.1),toe=(38,94.6)))
 S['squat_2']=f.svg('0 0 60 100','スクワット 悪い例 膝がつま先より前に出て背中が丸い')
 # ---- prone Y (top view)
 TT=[[(0,3.2,3.2),(0.1,8.6,8.6),(0.32,8.0,8.0),(0.62,6.0,6.0),(0.85,6.9,6.9),(1,6.0,6.0)]]
@@ -167,7 +178,11 @@ def prone(n):
     f.part(cr([(21+5*math.cos(a/16*2*math.pi)*(1.05 if math.cos(a/16*2*math.pi)<0 else 0.95),30+4.3*math.sin(a/16*2*math.pi)) for a in range(16)]),name='head')
     f.raw(f'<path d="M30 30 L60 30" stroke="#8C8C8C" stroke-width="0.5"></path>')
     f.raw(f'<path d="M31 30 L60 30" stroke="#6E6E6E" stroke-width="0.5"></path>')
-    for c,r in [((30,23),1.4),((30,37),1.4),((63,27),1.4),((63,33),1.4),((79,26.6),1.2),((79,33.4),1.2),((92,26.2),0.9),((92,33.8),0.9),((48,30),1.1)]+[(a[1],1.1) for a in arms]+[(a[2],0.9) for a in arms]: jm(f,c,r)
+    for y0,y1,y2 in ((27,26.6,26.2),(33,33.4,33.8)):
+        seam(f,(55,y0),(63.5,y0),(79,y1),3.4,3.4); seam(f,(63,y0),(79,y1),(92,y2),2.6,2.6); seam(f,(79,y1),(92,y2),(97,y2),1.5,1.5)
+    seam(f,(30,30),(48,30),(66,30),6.0,6.0)
+    for a_ in arms:
+        seam(f,(40,30),a_[0],a_[1],2.8,2.8,shift=2.0); seam(f,a_[0],a_[1],a_[2],2.0,2.0); seam(f,a_[1],a_[2],a_[3],1.3,1.3)
     top=f.svg('0 0 100 60','x')
     top=top[top.index('>')+1:top.rindex('</svg>')]
     g=Fig(f'pys{n}')
@@ -184,8 +199,8 @@ def prone(n):
     inner=f'<g transform="translate(4 0) scale(0.92)">{top}</g><line x1="2" y1="57.5" x2="98" y2="57.5" stroke="#D0D0D0" stroke-width="0.5" stroke-dasharray="2 2"></line><line x1="2" y1="97.4" x2="98" y2="97.4" stroke="#8C8C8C" stroke-width="0.8"></line><g transform="translate(100 0) scale(-1 1)">{sv}</g>'
     return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="プローンYレイズ 上から見た図と横から見た図 '+('腕を下ろす' if n==1 else '腕をY字に浮かす')+f'" style="width:100%;height:100%;display:block">{inner}</svg>'
 S['prone_y_raise_1']=prone(1); S['prone_y_raise_2']=prone(2)
-json.dump(S,open('/tmp/claude-0/gen2/svgs3.json','w'),ensure_ascii=False)
+json.dump(S,open('/tmp/claude-0/gen2/svgs4.json','w'),ensure_ascii=False)
 html='<body style="background:#fff;margin:16px">'
 for nm in ['pushup','squat','prone_y_raise']:
     for s in (92,300): html+=f'<div style="display:flex;gap:12px;margin:8px"><div style="width:{s}px;height:{s}px;outline:1px dashed #ccc">{S[nm+"_1"]}</div><div style="width:{s}px;height:{s}px;outline:1px dashed #ccc">{S[nm+"_2"]}</div></div>'
-open('/tmp/claude-0/gen2/p3.html','w').write(html)
+open('/tmp/claude-0/gen2/p4.html','w').write(html)
