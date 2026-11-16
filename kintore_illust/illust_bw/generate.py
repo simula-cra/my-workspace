@@ -83,6 +83,10 @@ def bone_pt(p,q,t,off):
     v=sub(q,p); u=norm(v); n=(-u[1],u[0]); b=add(p,mul(v,t)); return add(b,mul(n,off)), math.degrees(math.atan2(u[1],u[0]))
 FLOOR_H='<line x1="2" y1="55.4" x2="98" y2="55.4" stroke="#8C8C8C" stroke-width="0.8"></line>'
 FLOOR_V='<line x1="2" y1="95.4" x2="58" y2="95.4" stroke="#8C8C8C" stroke-width="0.8"></line>'
+def jm(f,c,r=1.25,far=False):
+    col=FAR if far else INK
+    x,y=c
+    f.raw(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="#FFFFFF" fill-opacity="0.85" stroke="{col}" stroke-width="0.5"></circle><path d="M{x:.1f} {y:.1f} L{x+r:.1f} {y:.1f} A{r} {r} 0 0 1 {x:.1f} {y+r:.1f}Z M{x:.1f} {y:.1f} L{x-r:.1f} {y:.1f} A{r} {r} 0 0 1 {x:.1f} {y-r:.1f}Z" fill="{col}"></path>')
 def side_figure(f,k,far_arm=None,far_leg=None,order='arm_front'):
     if far_leg: f.part(limb([far_leg['heel'],far_leg['ball'],far_leg['toe']],FOOT,1,0.8),True); f.part(limb([k['hip'],far_leg['knee'],far_leg['ank']],LEG),True)
     if far_arm: f.part(limb([k['sh'],far_arm['elb'],far_arm['wr']],ARM),True); f.part(limb([far_arm['wr'],far_arm['fing']],HAND,0.5,0.9),True)
@@ -93,6 +97,10 @@ def side_figure(f,k,far_arm=None,far_leg=None,order='arm_front'):
     f.part(limb(k['torso'],TORSO,0.5,0.7),name='torso')
     f.part(limb([k['sh'],k['elb'],k['wr']],ARM,0.6,0.5),name='arm')
     f.part(limb([k['wr'],k['fing']],HAND,0.5,0.9),name='hand')
+    if far_leg: jm(f,far_leg['knee'],1.1,True); jm(f,far_leg['ank'],0.9,True)
+    if far_arm: jm(f,far_arm['elb'],1.0,True)
+    tor=k['torso']
+    for c,r in ((tor[0],1.0),(tor[1],1.2),(k['hip'],1.5),(k['knee'],1.3),(k['ank'],1.0),(k['sh'],1.4),(k['elb'],1.15),(k['wr'],0.9)): jm(f,c,r)
 S={}
 # ---- pushup 1
 f=Fig('pu1'); f.raw(FLOOR_H)
@@ -159,10 +167,25 @@ def prone(n):
     f.part(cr([(21+5*math.cos(a/16*2*math.pi)*(1.05 if math.cos(a/16*2*math.pi)<0 else 0.95),30+4.3*math.sin(a/16*2*math.pi)) for a in range(16)]),name='head')
     f.raw(f'<path d="M30 30 L60 30" stroke="#8C8C8C" stroke-width="0.5"></path>')
     f.raw(f'<path d="M31 30 L60 30" stroke="#6E6E6E" stroke-width="0.5"></path>')
-    return f.svg('0 0 100 60','プローンYレイズ '+('腕を下ろす' if n==1 else '腕をY字に浮かす'))
+    for c,r in [((30,23),1.4),((30,37),1.4),((63,27),1.4),((63,33),1.4),((79,26.6),1.2),((79,33.4),1.2),((92,26.2),0.9),((92,33.8),0.9),((48,30),1.1)]+[(a[1],1.1) for a in arms]+[(a[2],0.9) for a in arms]: jm(f,c,r)
+    top=f.svg('0 0 100 60','x')
+    top=top[top.index('>')+1:top.rindex('</svg>')]
+    g=Fig(f'pys{n}')
+    k=dict(N=(66.5,90.4),hip=(41,91.2),knee=(24,92.6),ank=(8,93.8),heel=(8.4,91.0),ball=(4.4,95.4),toe=(1.2,96.4),
+           head=(77,91.2),ht=95,sh=(67.5,92.4))
+    k['torso']=[k['N'],(53.5,90.6),k['hip']]; k['hc_neck']=hpt(k['head'],k['ht'],-1.2,3.2)
+    if n==1: k.update(elb=(81,94.6),wr=(92.5,95.4),fing=(98.8,96.4))
+    else: k.update(elb=(80.6,88.8),wr=(91.6,85.2),fing=(98,83.4))
+    c1,a1=bone_pt(k['N'],(53.5,90.6),0.65,3.4)
+    g.plan_m(['torso'],[(c1[0],c1[1],4.5,2.2,a1)])
+    side_figure(g,k)
+    if n==2: g.raw('<path d="M94.5 92.4 L94.5 88" stroke="#1E1E1E" stroke-width="0.6" opacity="0.7"></path><path d="M93.2 89.4 L94.5 87.6 L95.8 89.4" fill="none" stroke="#1E1E1E" stroke-width="0.6" opacity="0.7"></path>')
+    sv=g.svg('0 0 100 60','x'); sv=sv[sv.index('>')+1:sv.rindex('</svg>')]
+    inner=f'<g transform="translate(4 0) scale(0.92)">{top}</g><line x1="2" y1="57.5" x2="98" y2="57.5" stroke="#D0D0D0" stroke-width="0.5" stroke-dasharray="2 2"></line><line x1="2" y1="97.4" x2="98" y2="97.4" stroke="#8C8C8C" stroke-width="0.8"></line><g transform="translate(100 0) scale(-1 1)">{sv}</g>'
+    return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="プローンYレイズ 上から見た図と横から見た図 '+('腕を下ろす' if n==1 else '腕をY字に浮かす')+f'" style="width:100%;height:100%;display:block">{inner}</svg>'
 S['prone_y_raise_1']=prone(1); S['prone_y_raise_2']=prone(2)
-json.dump(S,open('/tmp/claude-0/gen2/svgs.json','w'),ensure_ascii=False)
+json.dump(S,open('/tmp/claude-0/gen2/svgs3.json','w'),ensure_ascii=False)
 html='<body style="background:#fff;margin:16px">'
 for nm in ['pushup','squat','prone_y_raise']:
     for s in (92,300): html+=f'<div style="display:flex;gap:12px;margin:8px"><div style="width:{s}px;height:{s}px;outline:1px dashed #ccc">{S[nm+"_1"]}</div><div style="width:{s}px;height:{s}px;outline:1px dashed #ccc">{S[nm+"_2"]}</div></div>'
-open('/tmp/claude-0/gen2/p.html','w').write(html)
+open('/tmp/claude-0/gen2/p3.html','w').write(html)
