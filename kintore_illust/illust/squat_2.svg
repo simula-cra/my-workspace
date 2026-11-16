@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 100">
+  <line x1="4" y1="95" x2="56" y2="95" stroke="var(--border)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="37" y1="62" x2="37" y2="92" stroke="var(--amber)" stroke-width="2.5" stroke-dasharray="3 3" opacity="0.7"/>
+  <text x="3" y="15" font-size="14" font-weight="bold" fill="var(--amber)" font-family="sans-serif">NG</text>
+  <g fill="none" stroke="var(--amber)" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="37,91 27,90 48,72 24,64" stroke-width="9"/>
+    <path d="M24 64 Q10 42 30 36" stroke-width="13"/>
+    <line x1="30" y1="38" x2="40" y2="56" stroke-width="8"/>
+  </g>
+  <circle cx="39" cy="40" r="6" fill="var(--amber)"/>
+  <circle cx="48" cy="72" r="4" fill="var(--amber)"/>
+</svg>
