@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>筋トレ管理</title>
+<style>
+  :root{
+    --bg:#1C1E1F; --bg-card:#26292B; --steel:#5B8A9E; --lime:#8FBC5A;
+    --amber:#E0A458; --text:#EDEDE9; --text-dim:#9AA0A3; --border:#33373A;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{ margin:0; background:var(--bg); color:var(--text);
+    font-family:"Hiragino Sans","Noto Sans JP",sans-serif;
+    min-height:100vh; padding-bottom:80px; }
+  header{ padding:24px 20px 14px; border-bottom:1px solid var(--border); }
+  header h1{ font-size:20px; margin:0; font-weight:800; }
+  header p{ margin:4px 0 0; color:var(--text-dim); font-size:12px; }
+  .streak{ display:flex; align-items:center; gap:8px; margin-top:10px; }
+  .streak-num{ font-size:28px; font-weight:800; color:var(--lime); line-height:1; }
+  .streak-label{ font-size:11px; color:var(--text-dim); }
+
+  main{ padding:16px; max-width:480px; margin:0 auto; }
+  .card{ background:var(--bg-card); border:1px solid var(--border);
+    border-radius:14px; padding:16px; margin-bottom:14px; }
+  .card h2{ margin:0 0 4px; font-size:17px; }
+  .card .sub{ color:var(--text-dim); font-size:12px; margin-bottom:12px; }
+  .card-tag{ display:inline-block; font-size:11px; font-weight:700;
+    color:var(--steel); border:1px solid var(--steel);
+    border-radius:20px; padding:3px 10px; margin-bottom:8px; }
+
+  .slot-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:8px; }
+  .slot-btn{ background:var(--bg); border:1px solid var(--border); color:var(--text-dim);
+    border-radius:10px; padding:10px 4px; font-size:13px; font-weight:700; text-align:center;
+    cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .slot-btn.active{ background:var(--lime); color:#14201A; border-color:var(--lime); }
+  .slot-btn.add{ border-style:dashed; color:var(--steel); }
+
+  .exercise-list{ list-style:none; margin:0; padding:0; }
+  .exercise-list li{ display:flex; justify-content:space-between; align-items:center;
+    padding:9px 0; border-bottom:1px solid var(--border); font-size:14px; }
+  .exercise-list li.clickable{ cursor:pointer; }
+  .exercise-list li:last-child{ border-bottom:none; }
+  .ex-name{ font-weight:600; }
+  .ex-name.linkish{ text-decoration:underline dotted; text-underline-offset:3px; }
+  .ex-vol{ color:var(--text-dim); font-size:12px; }
+
+  .btn{ display:block; width:100%; text-align:center; padding:13px;
+    border-radius:12px; border:none; font-size:15px; font-weight:800;
+    cursor:pointer; margin-top:8px; }
+  .btn-primary{ background:var(--lime); color:#14201A; }
+  .btn-secondary{ background:transparent; color:var(--text); border:1px solid var(--border); }
+  .btn-amber{ background:var(--amber); color:#241a0a; }
+  .btn-sm{ padding:6px 10px; font-size:12px; margin-top:0; width:auto; display:inline-block; }
+
+  .routine-head{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:4px; }
+  .routine-head h2{ margin:0; }
+  .routine-ops{ display:flex; gap:6px; flex-shrink:0; }
+  .icon-btn{ background:transparent; border:1px solid var(--border); color:var(--text-dim);
+    border-radius:8px; padding:4px 9px; font-size:12px; cursor:pointer; }
+
+  #workoutScreen, #builderScreen{ display:none; }
+  .timer-wrap{ text-align:center; padding:26px 0 14px; }
+  .timer-num{ font-size:60px; font-weight:800; }
+  .timer-label{ color:var(--text-dim); font-size:13px; margin-top:2px; }
+  .set-progress{ display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin:14px 0; }
+  .dot{ width:9px; height:9px; border-radius:50%; background:var(--border); }
+  .dot.done{ background:var(--lime); }
+  .dot.active{ background:var(--steel); }
+  .current-ex{ text-align:center; margin-bottom:4px; }
+  .current-ex .name{ font-size:19px; font-weight:800; }
+  .current-ex .target{ color:var(--text-dim); font-size:13px; margin-top:2px; }
+  .timer-btn-row{ display:flex; gap:8px; }
+  .timer-btn-row .btn{ flex:1; }
+
+  nav.tabbar{ position:fixed; bottom:0; left:0; right:0; background:var(--bg-card);
+    border-top:1px solid var(--border); display:flex; }
+  nav.tabbar button{ flex:1; background:none; border:none; color:var(--text-dim);
+    padding:11px 0 9px; font-size:12px; font-weight:700; }
+  nav.tabbar button.active{ color:var(--lime); }
+
+  #historyScreen, #settingsScreen{ display:none; }
+  .cal{ display:grid; grid-template-columns:repeat(7,1fr); gap:5px; }
+  .cal .d{ aspect-ratio:1; border-radius:7px; background:var(--border);
+    display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--text-dim); }
+  .cal .d.done{ background:var(--lime); color:#14201A; font-weight:700; }
+  .cal .d.today{ outline:2px solid var(--steel); }
+
+  .stat-row{ display:flex; gap:8px; }
+  .stat-box{ flex:1; background:var(--bg-card); border:1px solid var(--border);
+    border-radius:12px; padding:12px; text-align:center; }
+  .stat-box .num{ font-size:22px; font-weight:800; color:var(--lime); }
+  .stat-box .label{ font-size:10px; color:var(--text-dim); margin-top:2px; }
+
+  input[type=number], input[type=text]{ background:var(--bg); border:1px solid var(--border);
+    color:var(--text); border-radius:8px; padding:5px; font-size:13px; text-align:center; }
+  input[type=number]{ width:52px; }
+  input[type=text]{ width:100%; text-align:left; padding:9px; font-size:14px; }
+  .set-row{ display:flex; justify-content:space-between; align-items:center;
+    padding:8px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:4px; }
+  .set-row:last-child{ border-bottom:none; }
+  .set-row .name{ font-size:12.5px; flex:1 1 100%; }
+  .lib-add{ background:var(--steel); color:#fff; border:none; border-radius:8px;
+    padding:5px 10px; font-size:11px; }
+  .lib-remove{ background:transparent; color:var(--amber); border:1px solid var(--amber);
+    border-radius:8px; padding:4px 8px; font-size:11px; }
+  .hist-item{ display:flex; justify-content:space-between; padding:7px 0;
+    border-bottom:1px solid var(--border); font-size:12.5px; }
+  .hist-item:last-child{ border-bottom:none; }
+
+  .cat-head{ font-size:12px; font-weight:800; color:var(--steel); margin:16px 0 6px;
+    padding-bottom:4px; border-bottom:1px solid var(--border); }
+  .cat-head:first-child{ margin-top:4px; }
+
+  /* フォームガイド */
+  .inline-guide{ display:none; padding:10px 0 14px; border-bottom:1px solid var(--border); }
+  .inline-guide.open{ display:block; }
+  .guide-figs{ display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:10px; }
+  .guide-fig{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .guide-fig svg{ width:92px; height:92px; color:var(--lime); }
+  .guide-fig span{ font-size:11px; color:var(--text-dim); margin-top:2px; }
+  .guide-arrow{ color:var(--text-dim); font-size:20px; }
+  .guide-tips{ margin:0; padding-left:18px; font-size:12.5px; color:var(--text-dim); line-height:1.7; }
+  #workoutGuideCard .guide-figs svg{ width:112px; height:112px; }
+  /* v8: 横長の絵（寝る・四つん這いの種目）は正方形だと小さく余白が出るので横長の枠で表示 */
+  .guide-fig.wide svg, #workoutGuideCard .guide-fig.wide svg{ width:136px; height:82px; }
+  .guide-figs:has(.wide){ gap:8px; }
+
+  /* 要注意ポイント・負荷アップ（v6でCSSが未定義だった分） */
+  .guide-extra{ margin-top:10px; }
+  .guide-extra-label{ font-size:12px; font-weight:800; margin:10px 0 4px; }
+  .guide-extra-label.caution{ color:var(--amber); }
+  .guide-extra-label.levelup{ color:var(--steel); }
+
+  /* v7: 並べ替えボタン */
+  .sel-row{ display:flex; align-items:center; gap:6px; padding:8px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .sel-row:last-child{ border-bottom:none; }
+  .sel-row .name{ font-size:12.5px; flex:1 1 100%; }
+  .sel-row .controls{ flex:1 1 auto; font-size:12px; }
+  .move-btns{ display:flex; gap:4px; }
+  .move-btn{ width:34px; height:30px; background:var(--bg); color:var(--text); border:1px solid var(--border);
+    border-radius:8px; font-size:14px; font-weight:800; cursor:pointer; }
+  .move-btn:disabled{ opacity:.25; cursor:default; }
+  .sel-row.flash{ animation:flash .6s ease; }
+  @keyframes flash{ from{ background:rgba(143,188,90,.25); } to{ background:transparent; } }
+
+  /* v7: 自前ポップアップ */
+  .modal-back{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:none;
+    align-items:center; justify-content:center; padding:16px; z-index:100; }
+  .modal-back.open{ display:flex; }
+  .modal{ background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
+    width:100%; max-width:360px; padding:20px 18px 16px; max-height:80vh; overflow:auto; }
+  .modal h3{ margin:0 0 8px; font-size:17px; }
+  .modal .msg{ color:var(--text-dim); font-size:13.5px; line-height:1.7; white-space:pre-line; }
+  .modal-btns{ display:flex; gap:8px; margin-top:16px; }
+  .modal-btns .btn{ flex:1; margin-top:0; }
+  .modal .pick-row{ display:flex; justify-content:space-between; align-items:center; padding:8px 0;
+    border-bottom:1px solid var(--border); font-size:13px; }
+  .modal .pick-row:last-child{ border-bottom:none; }
+  .add-ex-link{ display:block; width:100%; background:transparent; border:1px dashed var(--steel);
+    color:var(--steel); border-radius:12px; padding:10px; font-size:13px; font-weight:700; margin-top:8px; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>筋トレ管理</h1>
+  <p>ルーティンを選んでセットを組み、記録できます</p>
+  <div class="streak">
+    <div class="streak-num" id="streakNum">0</div>
+    <div class="streak-label">日連続実施中</div>
+  </div>
+</header>
+
+<main>
+  <!-- HOME -->
+  <div id="homeScreen">
+    <div class="card">
+      <span class="card-tag">ルーティンを選ぶ</span>
+      <div class="slot-grid" id="slotGrid"></div>
+    </div>
+    <div class="card">
+      <div class="routine-head">
+        <h2 id="menuTitle">-</h2>
+        <div class="routine-ops">
+          <button class="icon-btn" id="renameRoutineBtn">改名</button>
+          <button class="icon-btn" id="deleteRoutineBtn">削除</button>
+        </div>
+      </div>
+      <div class="sub" id="menuSub">-</div>
+      <div class="sub" style="margin-top:-8px;margin-bottom:10px;">種目名をタップすると、やり方とフォームのポイントが見られます</div>
+      <ul class="exercise-list" id="exerciseList"></ul>
+      <button class="btn btn-primary" id="startBtn">トレーニング開始</button>
+      <button class="btn btn-secondary" id="editSlotBtn">このセットを編集する</button>
+    </div>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="num" id="weekCount">0/3</div>
+        <div class="label">今週の実施</div>
+      </div>
+      <div class="stat-box">
+        <div class="num" id="totalCount">0</div>
+        <div class="label">通算実施回数</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORKOUT -->
+  <div id="workoutScreen">
+    <div class="card">
+      <div class="current-ex">
+        <div class="name" id="curExName">-</div>
+        <div class="target" id="curExTarget">-</div>
+      </div>
+      <div class="timer-wrap">
+        <div class="timer-num" id="timerNum">--</div>
+        <div class="timer-label" id="timerLabel">セット</div>
+      </div>
+      <div class="set-progress" id="setDots"></div>
+      <div class="timer-btn-row">
+        <button class="btn btn-secondary" id="pauseBtn">一時停止</button>
+        <button class="btn btn-secondary" id="skipBtn">スキップ</button>
+      </div>
+      <button class="btn btn-primary" id="setDoneBtn">セット完了</button>      <button class="btn btn-secondary" id="quitWorkoutBtn" style="margin-top:8px;">トレーニングをやめる</button>
+    </div>
+    <div class="card" id="workoutGuideCard">
+      <span class="card-tag">フォームのポイント</span>
+      <div id="workoutGuideBody"></div>
+    </div>
+  </div>
+
+  <!-- BUILDER -->
+  <div id="builderScreen">
+    <div class="card">
+      <h2 id="builderTitle">セットを編集</h2>
+      <div class="sub">↑↓で順番を入れ替えられます</div>
+      <div class="sub" id="builderEmpty">まだ選ばれていません。下の一覧から追加してください</div>
+      <div id="builderSelectedList"></div>
+      <button class="btn btn-primary" id="saveBuilderBtn">このセットを保存する</button>
+      <button class="btn btn-secondary" id="cancelBuilderBtn">戻る</button>
+    </div>
+    <div class="card">
+      <h2>種目を追加</h2>
+      <div class="sub">種目を追加して、回数・秒数・セット数を調整してください。部位ごとに選べます</div>
+      <div id="builderLibraryList"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="historyScreen">
+    <div class="card">
+      <h2>実施カレンダー</h2>
+      <div class="sub" id="calMonthLabel">-</div>
+      <div class="cal" id="calGrid"></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="num" id="hist4wRate">0%</div>
+        <div class="label">直近4週の実施率</div>
+      </div>
+      <div class="stat-box">
+        <div class="num" id="histStreak">0</div>
+        <div class="label">最大連続記録</div>
+      </div>
+    </div>
+    <div class="stat-row" style="margin-top:8px;">
+      <div class="stat-box">
+        <div class="num" id="weekKcal">0</div>
+        <div class="label">今週の消費kcal</div>
+      </div>
+      <div class="stat-box">
+        <div class="num" id="totalKcal">0</div>
+        <div class="label">通算消費kcal</div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px;">
+      <h2>直近の実施ログ</h2>
+      <div id="logList"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="settingsScreen">
+    <div class="card">
+      <h2>体重（カロリー計算用）</h2>
+      <div class="sub">あすけんの最新体重と合わせてください</div>
+      <div class="set-row">
+        <span class="name">体重</span>
+        <span><input type="number" id="bodyWeightInput" min="30" max="200" step="0.1"> kg</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>種目間の休憩時間</h2>
+      <div class="sub">縄跳びなど道具を取りに行く時間を考慮して設定できます</div>
+      <div class="set-row">
+        <span class="name">同じ種目の連続セット間</span>
+        <span><input type="number" id="restSameInput" min="0" max="180"> 秒</span>
+      </div>
+      <div class="set-row">
+        <span class="name">種目が変わる時（道具準備込み）</span>
+        <span><input type="number" id="restDiffInput" min="0" max="180"> 秒</span>
+      </div>
+      <button class="btn btn-amber" id="saveRestBtn">保存する</button>
+    </div>
+    <div class="card">
+      <h2>データ</h2>
+      <div class="sub">記録をすべて消去します（元に戻せません）</div>
+      <button class="btn btn-secondary" id="resetBtn">記録をリセット</button>
+    </div>
+  </div>
+</main>
+
+<!-- v7: 自前ポップアップ -->
+<div class="modal-back" id="modalBack">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 id="modalTitle"></h3>
+    <div class="msg" id="modalMsg"></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" id="modalCancel"></button>
+      <button class="btn btn-primary" id="modalOk"></button>
+    </div>
+  </div>
+</div>
+
+<nav class="tabbar">
+  <button class="tab-btn active" data-tab="home">今日</button>
+  <button class="tab-btn" data-tab="history">記録</button>
+  <button class="tab-btn" data-tab="settings">設定</button>
+</nav>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'workout_data_v2';
+
+  const MET_TABLE = {
+    'アブローラー（立ちコロ/膝コロ）': {met:8.0, secPerRep:3},
+    'アブローラー（立ちコロ）': {met:8.0, secPerRep:3},
+    'アブローラー（斜めコロ・腹斜筋狙い）': {met:8.0, secPerRep:3},
+    '腕立て伏せ': {met:8.0, secPerRep:2.5},
+    '腕立て伏せ（ワイド/ナロー交互）': {met:8.0, secPerRep:2.5},
+    'ダイヤモンドプッシュアップ': {met:8.0, secPerRep:2.5},
+    'パイクプッシュアップ': {met:8.0, secPerRep:2.5},
+    'リバースプッシュアップ（椅子ディップス）': {met:5.0, secPerRep:2.5},
+    'プランク': {met:4.0, secPerRep:0},
+    'サイドプランク（左右）': {met:4.0, secPerRep:0},
+    '縄跳び': {met:12.0, secPerRep:0},
+    '縄跳び（二重跳び挑戦）': {met:12.0, secPerRep:0},
+    'その場ステップ（踏み台昇降）': {met:8.0, secPerRep:0},
+    'その場駆け足': {met:8.0, secPerRep:0},
+    'マウンテンクライマー': {met:8.0, secPerRep:2},
+    'クロスマウンテンクライマー（腹斜筋）': {met:8.0, secPerRep:2.5},
+    'バイシクルクランチ': {met:6.0, secPerRep:2},
+    'クランチ': {met:5.0, secPerRep:2.5},
+    'ロシアンツイスト': {met:5.0, secPerRep:2},
+    'レッグレイズ': {met:4.0, secPerRep:3},
+    'スクワット': {met:5.0, secPerRep:3},
+    'ランジ（左右）': {met:5.0, secPerRep:3},
+    'ヒップリフト（お尻上げ）': {met:4.0, secPerRep:3},
+    'カーフレイズ（かかと上げ）': {met:4.0, secPerRep:2},
+    'バックエクステンション（背筋伸ばし）': {met:4.0, secPerRep:3},
+    'スーパーマン': {met:4.0, secPerRep:3},
+    'ハイリバースプランク': {met:4.0, secPerRep:0}
+  };
+  function getMet(name){ return MET_TABLE[name] || {met:6.0, secPerRep:3}; }
+  function calcKcalForExercise(ex, bw){
+    const info = getMet(ex.name);
+    const totalSeconds = ex.type==='time' ? ex.seconds*ex.sets : ex.reps*info.secPerRep*ex.sets;
+    return Math.round(info.met * 3.5 * bw / 200 * (totalSeconds/60));
+  }
+  function calcMenuKcal(exs, bw){
+    return exs.reduce((s,ex)=> s + calcKcalForExercise(ex, bw), 0);
+  }
+
+  /* ===== 部位カテゴリ ===== */
+  const CATEGORIES = ['全身','上半身','腕','腹筋','背筋','下半身'];
+
+  /* ===== 種目ライブラリ（カテゴリ付き） ===== */
+  const EXERCISE_LIBRARY = [
+    // 全身・有酸素
+    {name:'プランク', category:'全身', type:'time', defSeconds:45, defSets:3},
+    {name:'マウンテンクライマー', category:'全身', type:'reps', defReps:20, defSets:3},
+    {name:'縄跳び', category:'全身', type:'time', defSeconds:180, defSets:2},
+    {name:'縄跳び（二重跳び挑戦）', category:'全身', type:'time', defSeconds:300, defSets:1},
+    {name:'その場ステップ（踏み台昇降）', category:'全身', type:'time', defSeconds:180, defSets:2},
+    {name:'その場駆け足', category:'全身', type:'time', defSeconds:300, defSets:1},
+    // 上半身（胸・肩）
+    {name:'腕立て伏せ', category:'上半身', type:'reps', defReps:15, defSets:2},
+    {name:'腕立て伏せ（ワイド/ナロー交互）', category:'上半身', type:'reps', defReps:15, defSets:3},
+    {name:'ダイヤモンドプッシュアップ', category:'上半身', type:'reps', defReps:10, defSets:3},
+    {name:'パイクプッシュアップ', category:'上半身', type:'reps', defReps:10, defSets:3},
+    // 腕
+    {name:'リバースプッシュアップ（椅子ディップス）', category:'腕', type:'reps', defReps:12, defSets:3},
+    // 腹筋
+    {name:'アブローラー（立ちコロ/膝コロ）', category:'腹筋', type:'reps', defReps:8, defSets:3},
+    {name:'アブローラー（立ちコロ）', category:'腹筋', type:'reps', defReps:10, defSets:4},
+    {name:'アブローラー（斜めコロ・腹斜筋狙い）', category:'腹筋', type:'reps', defReps:8, defSets:3},
+    {name:'バイシクルクランチ', category:'腹筋', type:'reps', defReps:20, defSets:2},
+    {name:'クランチ', category:'腹筋', type:'reps', defReps:20, defSets:3},
+    {name:'ロシアンツイスト', category:'腹筋', type:'reps', defReps:20, defSets:2},
+    {name:'クロスマウンテンクライマー（腹斜筋）', category:'腹筋', type:'reps', defReps:20, defSets:2},
+    {name:'レッグレイズ', category:'腹筋', type:'reps', defReps:15, defSets:3},
+    // 背筋
+    {name:'バックエクステンション（背筋伸ばし）', category:'背筋', type:'reps', defReps:15, defSets:3},
+    {name:'スーパーマン', category:'背筋', type:'reps', defReps:15, defSets:3},
+    {name:'ハイリバースプランク', category:'背筋', type:'time', defSeconds:30, defSets:3},
+    // 下半身
+    {name:'スクワット', category:'下半身', type:'reps', defReps:15, defSets:3},
+    {name:'ランジ（左右）', category:'下半身', type:'reps', defReps:20, defSets:3},
+    {name:'ヒップリフト（お尻上げ）', category:'下半身', type:'reps', defReps:15, defSets:3},
+    {name:'カーフレイズ（かかと上げ）', category:'下半身', type:'reps', defReps:20, defSets:3},
+    {name:'サイドプランク（左右）', category:'背筋', type:'time', defSeconds:30, defSets:2}
+  ];
+
+  /* ===== フォームガイド(イラスト+ポイント) ===== */
+  const SVG_PUSHUP_UP = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" role="img" aria-label="腕立て伏せ 上の姿勢"><defs><clipPath id="pu17c"><use href="#pu17"></use></clipPath><clipPath id="pu18c"><use href="#pu18"></use></clipPath></defs><line x1="2" y1="55.4" x2="98" y2="55.4" stroke="#5F6569" stroke-width="0.8"></line><g fill="#7E8488" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="pu11" d="M72.9 29.6C73.3 30.5 72.5 31.6 72.3 32.6S71.9 34.6 71.6 35.6S70.7 37.4 70.4 38.4S69.4 40.2 69.3 41.2S69.6 43.1 69.6 44S69.5 45.9 69.4 46.8S69.1 48.7 69 49.7S68.9 52 68.7 52.6S67.9 53.4 67.5 53.4S66.5 53.2 66.2 52.6S66 50.7 65.9 49.7S65.4 47.8 65.3 46.8S65.1 44.8 65.1 43.8S65.5 41.8 65.6 40.8S65.9 38.7 66.1 37.7S66.2 35.5 66.3 34.5S66.6 32.5 66.7 31.4S66.4 29.1 67 28.4S69.4 27 70.4 27.2S72.6 28.7 72.9 29.6Z"></path><path id="pu12" d="M67.7 51.7C68.4 51.8 70.1 52.4 71.2 52.7S74 53.6 74.6 53.9S75.1 54.3 75.1 54.5S75 55.1 74.3 55.2S71.8 55.2 70.6 54.9S67.8 54.3 67.2 53.9S66.9 52.8 67 52.5S67 51.7 67.7 51.7Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="69.5" y1="41.2" x2="65.6" y2="40.8"></line></g><g fill="#DADDDF" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="pu13" d="M77.2 27.2C76.9 27.7 76.1 27.8 75.6 28.1S74.6 29.2 74 29.1S72.2 28.5 71.8 27.9S71.6 25.8 71.9 25.2S73.1 24.7 73.7 24.5S74.8 23.7 75.4 23.8S77 24.4 77.3 25S77.5 26.7 77.2 27.2Z"></path><path id="pu14" d="M77.8 20.9C78.6 20.4 79.8 20.1 80.7 20.2S82.7 20.5 83.4 21.1S84.7 22.6 85.1 23.4S85.5 25.5 85.3 26.3S84.5 28.1 84.1 28.6S82.9 29.3 82.4 29.7S81.7 30.9 81.4 31.1S80.7 30.6 80.3 30.6S79.6 30.9 79.3 31S78.8 30.9 78.4 30.9S77.5 31.2 77.2 31.1S76.5 30.7 76.2 30.3S75.8 29 75.8 28.3S76.1 26.9 76.1 26S75.6 24 75.8 23.1S77 21.4 77.8 20.9Z"></path><path id="pu15" d="M12 47.5C12.5 48.2 12.7 49.5 13.1 50.6S13.7 53.2 14.1 53.7S15 53.7 15.5 53.7S16.4 53.7 16.7 53.8S17.2 54.1 17.2 54.3S17.2 54.9 16.7 55.1S15.1 55.3 14.4 55.3S12.8 56 12.2 55.4S11.3 53.1 10.9 52S9.7 49.3 9.6 48.5S10 46.9 10.4 46.8S11.6 46.9 12 47.5Z"></path><path id="pu16" d="M48.3 42.3C47.9 43.3 46.4 42.9 45.5 43.2S43.5 43.7 42.5 44S40.7 44.6 39.7 44.9S37.7 45.4 36.7 45.6S34.8 46 33.8 46.2S31.7 46.5 30.8 46.9S29.1 48.1 28.2 48.5S26.4 49.4 25.5 49.7S23.5 50.1 22.5 50.3S20.4 50.5 19.4 50.7S17.5 51.3 16.5 51.5S14.3 52.3 13.6 52.3S12.5 51.7 12.3 51.3S12.1 50.1 12.6 49.7S14.4 48.8 15.3 48.4S17.2 47.6 18.1 47.2S19.9 46.3 20.8 45.9S22.6 45 23.5 44.5S25.3 43.8 26.2 43.3S28.1 42.6 28.9 42.1S30.6 40.8 31.5 40.2S33.2 39.1 34 38.6S35.8 37.5 36.7 37S38.5 36.3 39.5 36S41.3 35.3 42.3 35S44.1 33.5 45.1 33.9S47.8 36 48.4 37.4S48.8 41.3 48.3 42.3Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="45.7" y1="42.6" x2="42.8" y2="35.4"></line><line x1="30.9" y1="47.0" x2="28.8" y2="41.8"></line><line x1="14.6" y1="51.2" x2="11.6" y2="50.7"></line></g><g fill="#DADDDF" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="pu17" d="M74.1 30C73.7 31 72.9 31.9 72.2 32.5S70.6 33 69.7 33.2S68.1 33.8 67.3 34.1S65.6 34.5 64.8 34.7S63.1 35 62.3 35.4S60.5 36.5 59.7 37.1S58.1 38.5 57.2 39.1S55.4 40.1 54.5 40.5S52.5 41 51.5 41.3S49.8 42.6 48.5 42.2S44.4 40.6 43.8 39.2S44.4 35.2 45 34.1S46.8 33.1 47.7 32.6S49.5 31.5 50.4 31S52.3 30.2 53.2 29.7S55.1 28.8 56 28.4S58 27.6 58.9 27.1S60.5 26.3 61.2 25.8S62.7 24.6 63.4 24.1S65 23.3 65.8 23S67.3 22.1 68.3 22.2S70.6 23.1 71.7 23.9S74.1 25.6 74.5 26.7S74.5 29.1 74.1 30Z"></path></g><g fill="#5B8A9E"><g clip-path="url(#pu17c)"><ellipse cx="66.1" cy="25.6" rx="5.5" ry="2.6" transform="rotate(159 66.1 25.6)"></ellipse></g></g><g fill="none" stroke="#141516" stroke-width="0.75"><use href="#pu17"></use></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="62.5" y1="35.9" x2="58.7" y2="26.7"></line></g><g fill="#DADDDF" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="pu18" d="M73 29C73.5 29.8 73 31 72.9 32S73 34 72.9 35S72.5 37 72.3 38S71.8 40 71.8 41S72.1 42.9 72.1 43.9S72 45.8 71.9 46.8S71.6 48.7 71.5 49.7S71.4 52 71.2 52.6S70.4 53.2 70 53.2S69 53.2 68.7 52.6S68.5 50.7 68.4 49.7S67.9 47.8 67.8 46.8S67.6 44.9 67.6 43.9S68.1 42 68.1 41S68 39 67.9 38S67.6 36 67.5 35S67.4 33 67.3 32S66.4 29.8 66.9 29S69 27.2 70 27.2S72.5 28.2 73 29Z"></path></g><g fill="#5B8A9E"><g clip-path="url(#pu18c)"><ellipse cx="71.3" cy="34.0" rx="4.6" ry="1.8" transform="rotate(90 71.3 34.0)"></ellipse></g></g><g fill="none" stroke="#141516" stroke-width="0.75"><use href="#pu18"></use></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="71.8" y1="31.9" x2="66.5" y2="28.8"></line><line x1="71.9" y1="41.0" x2="68.1" y2="41.0"></line></g><g fill="#DADDDF" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="pu19" d="M70.2 51.7C71 51.8 72.7 52.4 73.9 52.7S76.9 53.6 77.6 53.9S78.1 54.3 78.1 54.5S78.1 55.1 77.3 55.2S74.7 55.2 73.4 54.9S70.4 54.3 69.7 53.9S69.4 52.8 69.5 52.5S69.5 51.7 70.2 51.7Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="71.0" y1="51.8" x2="68.9" y2="53.5"></line></g></svg>'; /* v8: リアル寄りの人体イラスト（案C） */
+  const SVG_PUSHUP_DOWN = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" role="img" aria-label="腕立て伏せ 下の姿勢"><defs><clipPath id="pu27c"><use href="#pu27"></use></clipPath><clipPath id="pu28c"><use href="#pu28"></use></clipPath></defs><line x1="2" y1="55.4" x2="98" y2="55.4" stroke="#5F6569" stroke-width="0.8"></line><g fill="#7E8488" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="pu21" d="M67.1 48.9C66.2 49.1 65.3 48.2 64.4 47.9S62.4 47.4 61.6 47S60.3 46.2 59.7 45.6S58.1 44 58.1 43.9S59.4 44.8 59.7 45.3S60 46.3 60.1 47.1S60.2 48.9 60.3 49.7S60.8 51.7 60.7 52.3S60.1 53.2 59.7 53.3S58.6 53.4 58.2 52.9S57.7 51.3 57.3 50.5S56.5 49 56.1 48.1S55.3 45.9 55.3 44.7S55.1 41.6 55.8 41S58.5 41.1 59.8 41.3S62.2 41.7 63.3 41.9S65.1 42.3 66.1 42.5S68.3 42.4 68.9 43S70.1 45.6 69.7 46.6S68 48.6 67.1 48.9Z"></path><path id="pu22" d="M59.7 51.7C60.5 51.8 62.2 52.4 63.4 52.7S66.4 53.6 67.1 53.9S67.6 54.3 67.6 54.5S67.6 55.1 66.8 55.2S64.2 55.2 62.9 54.9S59.9 54.3 59.2 53.9S58.9 52.8 59 52.5S59 51.7 59.7 51.7Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="58.4" y1="44.0" x2="55.7" y2="41.1"></line></g><g fill="#DADDDF" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="pu23" d="M75.5 45.3C75.2 45.8 74.3 45.8 73.7 46.1S72.5 47 71.9 46.9S70.2 46.1 69.9 45.4S70 43.3 70.4 42.8S71.7 42.4 72.3 42.3S73.6 41.6 74.2 41.8S75.7 42.5 76 43.1S75.9 44.8 75.5 45.3Z"></path><path id="pu24" d="M77.6 39.5C78.5 39.3 79.7 39.4 80.6 39.7S82.4 40.6 83 41.4S83.8 43.2 83.8 44.1S83.7 46.2 83.2 47S82 48.4 81.4 48.8S80 49.1 79.5 49.3S78.4 50.3 78.1 50.3S77.5 49.7 77.2 49.6S76.4 49.7 76.1 49.7S75.6 49.4 75.3 49.3S74.4 49.3 74.1 49.1S73.5 48.6 73.4 48.1S73.4 46.7 73.6 46S74.3 44.8 74.5 44S74.6 41.9 75.1 41.1S76.7 39.8 77.6 39.5Z"></path><path id="pu25" d="M6.8 47.8C7.2 48.4 7.3 49.7 7.6 50.7S8.1 53.2 8.4 53.7S9.3 53.7 9.7 53.7S10.6 53.7 10.8 53.8S11.4 54.1 11.4 54.3S11.3 54.9 10.9 55.1S9.3 55.2 8.5 55.3S7 55.9 6.4 55.4S5.7 53.1 5.4 52S4.3 49.4 4.3 48.6S4.8 47 5.3 46.9S6.4 47.1 6.8 47.8Z"></path><path id="pu26" d="M43.5 52.8C42.8 53.7 41.5 52.9 40.5 52.9S38.5 52.9 37.5 52.9S35.5 53 34.5 53S32.5 52.9 31.5 52.8S29.4 52.7 28.4 52.6S26.4 52.4 25.4 52.5S23.5 53.1 22.5 53.4S20.5 53.7 19.5 53.7S17.5 53.5 16.5 53.4S14.4 53.1 13.4 53S11.4 53 10.4 53S8 53.2 7.4 52.9S6.5 52.1 6.4 51.6S6.5 50.4 7.1 50.1S9.1 49.8 10.1 49.7S12.1 49.4 13.1 49.3S15 48.9 16 48.7S18 48.3 19 48.2S21 47.9 22 47.8S24 47.6 24.9 47.3S26.9 46.6 27.9 46.2S29.8 45.6 30.8 45.4S32.7 44.8 33.7 44.6S35.7 44.4 36.7 44.3S38.7 44.2 39.7 44.1S41.8 43.2 42.7 43.9S44.8 46.6 44.9 48.1S44.2 52 43.5 52.8Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="41.0" y1="52.4" x2="40.1" y2="44.7"></line><line x1="25.4" y1="52.6" x2="24.9" y2="47.0"></line><line x1="8.7" y1="51.9" x2="5.8" y2="51.1"></line></g><g fill="#DADDDF" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="pu27" d="M71.5 47.9C70.8 48.7 69.9 49.4 69 49.7S67.3 49.8 66.4 49.8S64.7 49.9 63.8 49.9S62.1 49.8 61.2 49.8S59.6 49.7 58.7 49.9S56.7 50.4 55.8 50.8S53.9 51.7 52.9 52S50.9 52.6 49.9 52.7S47.9 52.7 46.8 52.7S44.9 53.5 43.8 52.8S40.3 50.2 40.1 48.7S41.6 45 42.5 44.1S44.5 43.6 45.5 43.3S47.5 42.7 48.4 42.5S50.5 42.1 51.5 42S53.5 41.6 54.5 41.4S56.7 41.1 57.6 40.9S59.4 40.5 60.2 40.3S62 39.5 62.8 39.3S64.5 38.9 65.4 38.8S67.1 38.4 68 38.8S70.1 40.3 70.9 41.3S72.7 43.7 72.8 44.8S72.1 47.1 71.5 47.9Z"></path></g><g fill="#5B8A9E"><g clip-path="url(#pu27c)"><ellipse cx="65.0" cy="41.3" rx="5.5" ry="2.6" transform="rotate(175 65.0 41.3)"></ellipse></g></g><g fill="none" stroke="#141516" stroke-width="0.75"><use href="#pu27"></use></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="58.7" y1="50.4" x2="57.6" y2="40.5"></line></g><g fill="#DADDDF" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="pu28" d="M66.7 48.7C65.8 48.8 64.7 47.8 63.9 47.3S62.1 45.9 61.8 45.8S62.4 46.2 62.6 46.8S62.7 48.7 62.8 49.6S63.3 51.7 63.2 52.3S62.6 53.1 62.1 53.2S61.1 53.4 60.7 52.9S60.1 51.2 59.8 50.3S58.9 48.8 58.6 47.8S57.7 45.6 57.7 44.3S57.6 40.9 58.4 40.4S61.3 40.8 62.6 41.1S65.1 42 66.2 42.3S68.7 42.4 69.3 43.2S70.1 45.8 69.7 46.8S67.7 48.6 66.7 48.7Z"></path></g><g fill="#5B8A9E"><g clip-path="url(#pu28c)"><ellipse cx="64.2" cy="42.9" rx="4.2" ry="1.7" transform="rotate(-155 64.2 42.9)"></ellipse></g></g><g fill="none" stroke="#141516" stroke-width="0.75"><use href="#pu28"></use></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="66.2" y1="48.9" x2="66.6" y2="42.8"></line><line x1="60.6" y1="43.5" x2="58.2" y2="40.5"></line></g><g fill="#DADDDF" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="pu29" d="M62.2 51.7C63 51.8 64.7 52.4 65.9 52.7S68.9 53.6 69.6 53.9S70.1 54.3 70.1 54.5S70.1 55.1 69.3 55.2S66.7 55.2 65.4 54.9S62.4 54.3 61.7 53.9S61.4 52.8 61.5 52.5S61.5 51.7 62.2 51.7Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="62.9" y1="51.7" x2="61.0" y2="53.6"></line></g></svg>'; /* v8: リアル寄りの人体イラスト（案C） */
+  const SVG_ABROLLER_START = '<svg viewBox="0 0 100 70"><path d="M67,29 L46,41" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M46,41 L30,55 L18,58" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M46,41 L51,58 L59,60" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="46" cy="41" r="5" fill="currentColor"/><circle cx="30" cy="55" r="5" fill="currentColor"/><circle cx="72" cy="25" r="10" fill="currentColor"/></svg>';
+  const SVG_ABROLLER_END = '<svg viewBox="0 0 100 70"><path d="M83,32 L42,45" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M42,45 L16,51 L8,53" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M56,45 L61,58 L69,60" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="42" cy="45" r="5" fill="currentColor"/><circle cx="16" cy="51" r="5" fill="currentColor"/><circle cx="90" cy="28" r="10" fill="currentColor"/></svg>';
+  const SVG_PLANK_OK = '<svg viewBox="0 0 100 60"><text x="2" y="14" font-size="14" font-weight="700" fill="currentColor">OK</text><path d="M25,29 L86,33" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M29,32 L29,52" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M86,33 L94,52" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="29" cy="32" r="5" fill="currentColor"/><circle cx="86" cy="33" r="5" fill="currentColor"/><circle cx="17" cy="25" r="10" fill="currentColor"/></svg>';
+  const SVG_PLANK_NG = '<svg viewBox="0 0 100 60"><text x="2" y="14" font-size="14" font-weight="700" fill="var(--amber)">NG</text><path d="M25,26 Q56,47 86,31" fill="none" stroke="var(--amber)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M29,29 L29,52" fill="none" stroke="var(--amber)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M86,31 L94,52" fill="none" stroke="var(--amber)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="29" cy="29" r="5" fill="var(--amber)"/><circle cx="86" cy="31" r="5" fill="var(--amber)"/><circle cx="17" cy="22" r="10" fill="var(--amber)"/></svg>';
+  const SVG_SIDEPLANK_OK = '<svg viewBox="0 0 100 60"><text x="2" y="14" font-size="14" font-weight="700" fill="currentColor">OK</text><path d="M26,29 L82,33" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M31,32 L35,52" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M82,33 L90,52" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="31" cy="32" r="5" fill="currentColor"/><circle cx="82" cy="33" r="5" fill="currentColor"/><circle cx="19" cy="24" r="10" fill="currentColor"/></svg>';
+  const SVG_SIDEPLANK_NG = '<svg viewBox="0 0 100 60"><text x="2" y="14" font-size="14" font-weight="700" fill="var(--amber)">NG</text><path d="M26,31 Q52,47 82,37" fill="none" stroke="var(--amber)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M31,34 L35,52" fill="none" stroke="var(--amber)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M82,37 L90,54" fill="none" stroke="var(--amber)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="31" cy="34" r="5" fill="var(--amber)"/><circle cx="82" cy="37" r="5" fill="var(--amber)"/><circle cx="19" cy="26" r="10" fill="var(--amber)"/></svg>';
+  const SVG_JUMPROPE_1 = '<svg viewBox="0 0 60 100"><path d="M30,26 L30,58" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,32 L17,42 M30,32 L43,42" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,58 L19,82 M30,58 L41,82" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M9,52 Q30,92 51,52" fill="none" stroke="var(--steel)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="32" r="5" fill="currentColor"/><circle cx="30" cy="58" r="5" fill="currentColor"/><circle cx="30" cy="17" r="10" fill="currentColor"/></svg>';
+  const SVG_JUMPROPE_2 = '<svg viewBox="0 0 60 100"><path d="M30,18 L30,48" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,23 L16,30 M30,23 L44,30" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,48 L21,67 M30,48 L39,67" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M9,56 Q30,14 51,56" fill="none" stroke="var(--steel)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="23" r="5" fill="currentColor"/><circle cx="30" cy="48" r="5" fill="currentColor"/><circle cx="30" cy="9" r="10" fill="currentColor"/></svg>';
+  const SVG_STEP_1 = '<svg viewBox="0 0 60 100"><rect x="14" y="80" width="32" height="9" rx="2" fill="none" stroke="var(--border)" stroke-width="4"/><path d="M30,29 L30,58" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,33 L17,45 M30,33 L43,45" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,58 L19,82 M30,58 L40,72" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="33" r="5" fill="currentColor"/><circle cx="30" cy="58" r="5" fill="currentColor"/><circle cx="30" cy="20" r="10" fill="currentColor"/></svg>';
+  const SVG_STEP_2 = '<svg viewBox="0 0 60 100"><rect x="14" y="80" width="32" height="9" rx="2" fill="none" stroke="var(--border)" stroke-width="4"/><path d="M30,23 L30,52" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,27 L17,37 M30,27 L43,37" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,52 L20,80 M30,52 L38,80" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="27" r="5" fill="currentColor"/><circle cx="30" cy="52" r="5" fill="currentColor"/><circle cx="30" cy="14" r="10" fill="currentColor"/></svg>';
+  const SVG_RUN_1 = '<svg viewBox="0 0 60 100"><path d="M30,27 L30,58" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,31 L14,38 M30,31 L46,20" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,58 L14,78 M30,58 L46,88" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="31" r="5" fill="currentColor"/><circle cx="30" cy="58" r="5" fill="currentColor"/><circle cx="30" cy="18" r="10" fill="currentColor"/></svg>';
+  const SVG_RUN_2 = '<svg viewBox="0 0 60 100"><path d="M30,27 L30,58" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,31 L46,38 M30,31 L14,20" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,58 L46,78 M30,58 L14,88" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="31" r="5" fill="currentColor"/><circle cx="30" cy="58" r="5" fill="currentColor"/><circle cx="30" cy="18" r="10" fill="currentColor"/></svg>';
+  const SVG_CLIMBER_1 = '<svg viewBox="0 0 100 60"><path d="M25,29 L86,33" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M29,32 L29,52" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M86,33 L94,52" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="29" cy="32" r="5" fill="currentColor"/><circle cx="86" cy="33" r="5" fill="currentColor"/><circle cx="17" cy="25" r="10" fill="currentColor"/></svg>';
+  const SVG_CLIMBER_2 = '<svg viewBox="0 0 100 60"><path d="M25,29 L86,33" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M29,32 L29,52" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M86,33 L58,24 L52,30" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="29" cy="32" r="5" fill="currentColor"/><circle cx="86" cy="33" r="5" fill="currentColor"/><circle cx="58" cy="24" r="5" fill="currentColor"/><circle cx="17" cy="25" r="10" fill="currentColor"/></svg>';
+  const SVG_BICYCLE_1 = '<svg viewBox="0 0 100 60"><path d="M22,32 L57,36" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M22,28 L9,15" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M57,36 L67,19 M57,36 L77,47 L88,42" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22" cy="30" r="5" fill="currentColor"/><circle cx="57" cy="36" r="5" fill="currentColor"/><circle cx="77" cy="47" r="5" fill="currentColor"/><circle cx="15" cy="24" r="10" fill="currentColor"/></svg>';
+  const SVG_BICYCLE_2 = '<svg viewBox="0 0 100 60"><path d="M22,33 L52,31" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M22,29 L37,14" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M52,31 L62,47 L73,44 M52,31 L60,17" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22" cy="31" r="5" fill="currentColor"/><circle cx="52" cy="31" r="5" fill="currentColor"/><circle cx="62" cy="47" r="5" fill="currentColor"/><circle cx="15" cy="26" r="10" fill="currentColor"/></svg>';
+  const SVG_TWIST_1 = '<svg viewBox="0 0 100 70"><path d="M46,29 L49,50" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M46,33 L68,41" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M49,50 L35,62 M49,50 L62,62" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="46" cy="31" r="5" fill="currentColor"/><circle cx="49" cy="50" r="5" fill="currentColor"/><circle cx="46" cy="19" r="10" fill="currentColor"/></svg>';
+  const SVG_TWIST_2 = '<svg viewBox="0 0 100 70"><path d="M46,29 L49,50" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M46,33 L24,41" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M49,50 L35,62 M49,50 L62,62" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="46" cy="31" r="5" fill="currentColor"/><circle cx="49" cy="50" r="5" fill="currentColor"/><circle cx="46" cy="19" r="10" fill="currentColor"/></svg>';
+  const SVG_LEGRAISE_1 = '<svg viewBox="0 0 100 60"><path d="M22,34 L58,34" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M22,30 L9,20" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M58,34 L88,38" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22" cy="32" r="5" fill="currentColor"/><circle cx="58" cy="34" r="5" fill="currentColor"/><circle cx="15" cy="26" r="10" fill="currentColor"/></svg>';
+  const SVG_LEGRAISE_2 = '<svg viewBox="0 0 100 60"><path d="M22,34 L58,34" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M22,30 L9,20" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M58,34 L64,8" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22" cy="32" r="5" fill="currentColor"/><circle cx="58" cy="34" r="5" fill="currentColor"/><circle cx="15" cy="26" r="10" fill="currentColor"/></svg>';
+  const SVG_SQUAT_OK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 100" role="img" aria-label="スクワット 良い例"><defs><clipPath id="sq18c"><use href="#sq18"></use></clipPath><clipPath id="sq19c"><use href="#sq19"></use></clipPath></defs><line x1="2" y1="95.4" x2="58" y2="95.4" stroke="#5F6569" stroke-width="0.8"></line><text x="2" y="12" font-size="11" font-weight="bold" fill="#8FBC5A" font-family="sans-serif">OK</text><g fill="#7E8488" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="sq11" d="M25.4 91.4C26.1 91.3 27.4 91.8 28.3 92S30.3 92.4 31.2 92.6S33.3 92.9 34.2 93.1S35.5 93.4 36.1 93.6S37.7 93.9 38.1 94.1S38.5 94.4 38.5 94.7S38.3 95.2 37.9 95.4S36.5 95.5 35.8 95.5S34.6 95.7 33.8 95.7S31.8 95.3 30.8 95.1S28.9 94.7 27.9 94.5S25.6 94.3 25 94S23.8 92.8 23.9 92.4S24.7 91.5 25.4 91.4Z"></path><path id="sq12" d="M21.3 66C22.3 65.4 23.2 66.4 24.1 66.6S25.9 67.2 26.9 67.5S28.8 67.9 29.7 68.2S31.4 68.7 32.4 69.1S34.9 69.8 36.1 70.4S39.3 71.3 39.8 72.3S39.6 75.1 39.3 76.3S38.4 79 37.9 80S36.9 81.5 36.3 82.2S35.1 83.7 34.5 84.4S33.3 85.8 32.7 86.6S31.8 88.2 31.3 89S30.3 90.9 29.7 91.3S28.5 91.6 28.1 91.3S27.2 90.6 27.3 89.9S28 88.3 28.4 87.4S29.2 85.8 29.6 84.9S30.4 83.3 30.7 82.4S31.4 80.7 31.8 79.8S32.7 78 32.9 77.3S33.3 76.1 33 76S31.9 76.4 31.1 76.4S29.2 76.5 28.2 76.4S26.3 76.1 25.4 75.9S23.5 75.5 22.6 75.4S20.5 75.7 19.7 74.8S17.6 71.5 17.8 70S20.3 66.5 21.3 66Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="40.1" y1="72.2" x2="34.5" y2="75.0"></line></g><g fill="#7E8488" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="sq13" d="M42.6 51.1C43.3 51.7 43 53 43.2 53.9S43.6 55.9 43.7 56.8S43.5 59 43.5 59.1S43.1 58.2 43.4 57.6S44.7 56.4 45.3 55.8S46.5 54.1 47 53.8S48.1 53.6 48.4 53.9S49.2 54.6 49.1 55.2S48.2 56.8 47.8 57.6S47.3 59.1 46.8 60S45.8 62 44.9 62.8S42.3 65.1 41.4 64.8S40 62.3 39.6 61.1S38.7 58.8 38.4 57.8S37.9 56 37.6 55S36.4 53.1 36.7 52.3S38.3 50.1 39.3 49.9S42 50.4 42.6 51.1Z"></path><path id="sq14" d="M47.2 54.2C47.3 53.5 48 52.2 48.5 51.2S49.7 48.8 50 48.3S50.5 47.9 50.7 48S51.3 48.1 51.2 48.8S51 51 50.6 52.1S49.7 54.5 49.2 55S48.1 55.1 47.8 55S47 54.8 47.2 54.2Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="42.4" y1="61.0" x2="41.6" y2="64.9"></line></g><g fill="#DADDDF" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="sq15" d="M42.2 47.8C42.1 48.4 41.5 48.7 41.1 49.1S40.7 50.3 40.1 50.4S38.2 50.5 37.6 50S36.7 48.1 36.8 47.5S37.6 46.8 38 46.4S38.7 45.4 39.3 45.3S41 45.2 41.5 45.7S42.2 47.2 42.2 47.8Z"></path><path id="sq16" d="M38.1 42.5C38.2 41.6 38.7 40.5 39.4 39.8S40.9 38.4 41.8 38.2S43.8 38.1 44.6 38.4S46.5 39.4 47.1 40.1S47.9 41.8 48.1 42.5S47.8 43.8 47.8 44.4S48.3 45.7 48.2 46.1S47.5 46.4 47.2 46.6S47 47.4 46.9 47.7S46.5 48 46.3 48.3S45.9 49.1 45.6 49.4S44.9 49.7 44.4 49.6S43.1 49.1 42.6 48.7S41.7 47.6 41 47S39.1 46.2 38.6 45.4S37.9 43.4 38.1 42.5Z"></path><path id="sq17" d="M27.8 91.4C28.5 91.3 29.8 91.8 30.8 92S32.7 92.4 33.7 92.6S35.8 92.9 36.6 93.1S38 93.4 38.6 93.6S40.2 93.9 40.6 94.1S41 94.4 41 94.7S40.8 95.2 40.4 95.4S39 95.5 38.3 95.5S37.1 95.7 36.3 95.7S34.3 95.3 33.3 95.1S31.3 94.7 30.3 94.5S28 94.3 27.4 94S26.2 92.8 26.3 92.4S27.1 91.5 27.8 91.4Z"></path><path id="sq18" d="M21 65.9C21.8 65.3 22.8 66.2 23.8 66.4S25.6 66.8 26.5 67S28.4 67.3 29.3 67.5S31.1 67.7 32.1 67.9S33.7 68.4 34.8 68.7S37.3 69.2 38.5 69.6S41.8 70.4 42.3 71.4S42.1 74.3 41.8 75.6S40.9 78.2 40.5 79.3S39.4 80.9 38.8 81.7S37.6 83.2 37 84S35.8 85.5 35.3 86.3S34.3 88 33.8 88.8S32.8 90.8 32.3 91.2S31 91.6 30.6 91.4S29.7 90.6 29.7 90S30.5 88.2 30.9 87.3S31.7 85.6 32.1 84.7S32.8 82.9 33.2 82.1S33.9 80.2 34.2 79.4S35.1 77.4 35.4 76.7S35.9 75.5 35.7 75.3S34.8 75.6 34 75.7S32.1 76 31.2 76.1S29.3 76 28.4 75.9S26.5 75.6 25.6 75.5S23.7 75.3 22.8 75.2S20.7 75.7 20 74.9S18.5 71.8 18.7 70.3S20.2 66.6 21 65.9Z"></path></g><g fill="#5B8A9E"><g clip-path="url(#sq18c)"><ellipse cx="30.9" cy="74.6" rx="7.5" ry="2.4" transform="rotate(6 30.9 74.6)"></ellipse></g></g><g fill="none" stroke="#141516" stroke-width="0.75"><use href="#sq18"></use></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="25.1" y1="71.5" x2="17.9" y2="74.4"></line><line x1="42.4" y1="71.3" x2="37.5" y2="74.0"></line><line x1="32.4" y1="90.1" x2="29.6" y2="91.1"></line></g><g fill="#DADDDF" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="sq19" d="M40.8 51C40.9 52 40.6 53.3 40.2 54.2S38.9 55.5 38.3 56.2S37 57.6 36.4 58.3S35 59.5 34.3 60.2S33 61.5 32.4 62.2S31.4 63.8 31 64.7S30.3 66.5 29.8 67.4S28.8 69 28.2 69.7S26.8 70.9 26.1 71.5S25.3 73.2 24 73.5S19.6 73.8 18.5 72.9S17.2 69 17.3 67.8S18.3 66.2 18.8 65.4S19.8 63.8 20.3 63S21.5 61.6 22 60.8S23.2 59.3 23.8 58.6S25 57.2 25.5 56.4S26.6 54.9 27 54S27.8 52.2 28.2 51.4S29.3 49.8 29.9 49.1S30.8 47.5 31.8 47.1S34.5 46.6 35.7 46.7S38.7 47.1 39.6 47.8S40.7 49.9 40.8 51Z"></path></g><g fill="#5B8A9E"><g clip-path="url(#sq19c)"><ellipse cx="24.6" cy="72.1" rx="4.2" ry="3.6" transform="rotate(130 24.6 72.1)"></ellipse></g></g><g fill="none" stroke="#141516" stroke-width="0.75"><use href="#sq19"></use></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="32.8" y1="62.5" x2="25.2" y2="56.2"></line></g><g fill="#DADDDF" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="sq110" d="M42.5 50.5C43.2 51 43.2 52.2 43.5 53.1S44.3 54.9 44.5 55.7S44.2 57.8 44.5 57.8S45.6 56.3 46.3 55.5S47.9 53.3 48.5 52.8S49.5 52.7 49.8 53S50.7 53.5 50.6 54.2S49.7 56.2 49.2 57.3S48.3 59.9 47.4 60.9S45.2 63.9 44.2 63.9S42.2 61.9 41.5 60.9S40.1 58.7 39.6 57.8S38.7 56.1 38.2 55.3S36.7 53.7 36.8 52.8S38.1 50.4 39 50S41.7 50 42.5 50.5Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="43.1" y1="51.9" x2="37.5" y2="54.4"></line><line x1="44.2" y1="60.1" x2="43.8" y2="63.9"></line></g><g fill="#DADDDF" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="sq111" d="M48.7 53.2C48.8 52.5 49.5 51.2 50 50.2S51.2 47.8 51.5 47.3S52 46.9 52.2 47S52.8 47.1 52.7 47.8S52.5 50 52.1 51.1S51.2 53.5 50.7 54S49.6 54.1 49.3 54S48.5 53.8 48.7 53.2Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="48.3" y1="52.9" x2="50.7" y2="54.2"></line></g></svg>'; /* v8: リアル寄りの人体イラスト（案C） */
+  const SVG_SQUAT_NG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 100" role="img" aria-label="スクワット 悪い例 膝がつま先より前に出て背中が丸い"><line x1="2" y1="95.4" x2="58" y2="95.4" stroke="#5F6569" stroke-width="0.8"></line><text x="2" y="12" font-size="11" font-weight="bold" fill="#E0A458" font-family="sans-serif">NG</text><g fill="#8E6E40" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="sq21" d="M26 88.9C26.8 89.1 28 89.8 29 90.3S30.9 91.3 31.9 91.8S34 92.8 34.8 93.1S36.1 93.5 36.7 93.6S38.2 93.9 38.6 94.1S39 94.4 39 94.7S38.9 95.3 38.4 95.4S36.9 95.5 36.2 95.5S34.9 95.8 34 95.6S31.9 94.7 30.9 94.2S28.9 93.2 27.9 92.7S25.5 91.8 24.9 91.3S24.1 89.9 24.3 89.5S25.2 88.8 26 88.9Z"></path><path id="sq22" d="M31.5 70.7C32.7 70.3 33.4 71.4 34.3 71.8S36.1 72.7 37 73.2S38.9 73.9 39.8 74.3S41.5 75.2 42.5 75.7S44.7 76.7 45.9 77.5S49.5 79.6 49.6 80.8S47.4 83.5 46.3 84.5S44 85.9 43 86.3S41.1 86.8 40.2 87S38.3 87.3 37.3 87.5S35.4 87.9 34.5 88.1S32.7 88.7 31.8 89S29.7 89.8 29 89.8S27.9 89.2 27.7 88.8S27.5 87.7 28 87.2S29.7 86.4 30.6 86S32.3 85.2 33.2 84.8S34.9 84 35.7 83.6S37.4 82.7 38.3 82.2S40.2 80.9 40.9 81S42.4 82.5 42.2 82.8S40.9 82.9 40 82.8S38 82.5 37 82.2S35.1 81.6 34.2 81.2S32.3 80.5 31.4 80.2S29.2 80.2 28.5 79.1S27 75.5 27.5 74.1S30.4 71 31.5 70.7Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="49.9" y1="80.9" x2="43.7" y2="81.1"></line></g><g fill="#8E6E40" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="sq23" d="M39 55.7C39.5 56.4 39.1 57.6 39.2 58.5S39.4 60.4 39.4 61.2S39.1 62.9 39 63.8S38.4 65.6 38.7 66.4S40 67.9 40.5 68.7S41.3 70.5 41.7 71.5S42.9 73.7 43 74.4S42.8 75.4 42.4 75.6S41.5 76.1 40.9 75.7S39.5 74.1 38.8 73.3S37.1 71.7 36.5 70.7S35.5 68.6 35.2 67.6S34.9 65.7 34.7 64.7S34.2 62.7 34 61.7S33.7 59.9 33.5 59S32.5 57.1 32.9 56.3S34.8 54.3 35.8 54.2S38.4 55 39 55.7Z"></path><path id="sq24" d="M42.8 74.7C43.2 75.1 43.5 76.3 43.7 77.2S44.4 79.3 44.5 79.8S44.4 80.5 44.2 80.5S43.7 80.7 43.3 80.3S42 78.9 41.6 78.1S40.8 76.1 40.8 75.5S41.5 74.6 41.8 74.5S42.5 74.2 42.8 74.7Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="38.9" y1="66.4" x2="35.2" y2="67.6"></line></g><g fill="#E0A458" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="sq25" d="M38.4 54.5C38 54.9 37.3 54.7 36.8 54.8S35.7 55.4 35.2 55.1S33.8 53.9 33.7 53.1S34.3 51.1 34.8 50.7S35.8 50.7 36.4 50.7S37.5 50.5 38 50.8S39.3 51.9 39.3 52.5S38.8 54.2 38.4 54.5Z"></path><path id="sq26" d="M38.5 47.8C39.1 47.1 40.2 46.6 41.2 46.4S43.2 46.3 44 46.6S45.6 47.8 46.2 48.5S47.1 50.4 47.1 51.3S46.8 53.2 46.5 53.8S45.5 54.7 45.1 55.2S44.7 56.6 44.4 56.8S43.6 56.6 43.3 56.6S42.7 57.1 42.4 57.3S41.9 57.3 41.5 57.4S40.7 57.9 40.4 57.8S39.6 57.7 39.2 57.3S38.5 56.2 38.3 55.5S38.3 54 38.1 53.2S37.1 51.4 37.1 50.5S37.8 48.5 38.5 47.8Z"></path><path id="sq27" d="M28.5 88.9C29.3 89.1 30.5 89.8 31.5 90.3S33.4 91.3 34.4 91.8S36.5 92.8 37.3 93.1S38.6 93.5 39.2 93.6S40.7 93.9 41.1 94.1S41.5 94.4 41.5 94.7S41.4 95.3 40.9 95.4S39.4 95.5 38.7 95.5S37.4 95.8 36.5 95.6S34.4 94.7 33.4 94.2S31.4 93.2 30.4 92.7S28 91.8 27.4 91.3S26.6 89.9 26.8 89.5S27.7 88.8 28.5 88.9Z"></path><path id="sq28" d="M31.1 70.5C32.1 70 33 71.1 33.9 71.4S35.7 72.1 36.6 72.4S38.4 73 39.3 73.3S41.2 73.8 42.1 74.2S43.7 75 44.7 75.4S47 76 48.2 76.7S52 78.7 52.1 79.8S49.9 82.6 48.9 83.6S46.6 85 45.6 85.5S43.8 86.1 42.8 86.4S40.9 86.8 39.9 87S38 87.5 37.1 87.8S35.3 88.5 34.4 88.9S32.3 89.8 31.6 89.8S30.4 89.3 30.2 88.9S30 87.7 30.4 87.2S32.1 86.3 33 85.9S34.7 85 35.6 84.6S37.3 83.6 38.2 83.2S39.8 82.2 40.7 81.7S42.5 80.3 43.3 80.3S45 81.9 45 82.2S43.8 82.2 43 82.2S41 82.2 40.1 82.1S38.2 81.7 37.2 81.5S35.4 81 34.5 80.7S32.6 80.2 31.7 80S29.5 80.2 28.9 79.3S27.9 76 28.3 74.6S30.2 71.1 31.1 70.5Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="34.4" y1="73.3" x2="29.8" y2="79.7"></line><line x1="52.2" y1="79.8" x2="46.6" y2="80.3"></line><line x1="32.5" y1="88.6" x2="29.5" y2="88.4"></line></g><g fill="#E0A458" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="sq29" d="M36.7 55.5C36.5 56.5 35.9 57.5 35.2 58.2S33.8 59.3 33 59.7S31.5 60.7 30.7 61.2S29 62.2 28.3 62.5S27.1 62.6 26.9 62.8S26.9 63.1 27.3 63.3S28.6 63.8 29.2 64.4S30.6 66 31.1 66.9S32 68.8 32.4 69.7S34 71.2 33.9 72.5S32.9 76.8 31.7 77.6S27.7 77.7 26.5 77.3S25.2 75.7 24.5 74.9S23.1 73.3 22.4 72.5S21.4 71 20.7 70S19 67.5 18.3 66.1S16.2 62.8 16.3 61.3S18.2 58.6 19.3 57.3S21.7 54.8 22.6 53.9S23.9 52.6 24.6 52S26.1 51 26.9 50.6S28.3 49.4 29.3 49.3S31.8 49.5 33 50S35.8 51.2 36.4 52.1S36.9 54.5 36.7 55.5Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="25.7" y1="62.9" x2="16.0" y2="60.9"></line></g><g fill="#E0A458" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="sq210" d="M38.9 55.2C39.6 55.8 39.3 56.9 39.6 57.8S40.1 59.6 40.3 60.5S40.3 62.2 40.4 63.1S40.3 64.9 40.6 65.8S42 67.3 42.5 68.2S43.3 70 43.7 71S44.9 73.2 45 73.9S44.7 74.8 44.3 75S43.5 75.6 42.9 75.2S41.5 73.6 40.8 72.8S39.1 71.2 38.6 70.3S37.7 68.2 37.3 67.3S36.6 65.5 36.3 64.6S35.5 62.8 35.1 61.9S34.5 60.2 34.1 59.4S32.8 57.7 33 56.9S34.5 54.5 35.5 54.2S38.2 54.6 38.9 55.2Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="39.3" y1="56.6" x2="33.5" y2="58.4"></line><line x1="40.7" y1="65.7" x2="37.3" y2="67.3"></line></g><g fill="#E0A458" stroke="#141516" stroke-width="0.75" stroke-linejoin="round"><path id="sq211" d="M44.8 74.2C45.2 74.6 45.5 75.8 45.7 76.7S46.4 78.8 46.5 79.3S46.4 80 46.2 80S45.7 80.2 45.3 79.8S44 78.4 43.6 77.6S42.8 75.6 42.8 75S43.5 74.1 43.8 74S44.5 73.7 44.8 74.2Z"></path></g><g stroke="#141516" stroke-width="0.55" stroke-linecap="round"><line x1="45.2" y1="73.9" x2="42.8" y2="75.1"></line></g></svg>'; /* v8: リアル寄りの人体イラスト（案C） */
+
+  /* 新種目のイラスト */
+  const SVG_DIAMOND_UP = SVG_PUSHUP_UP;
+  const SVG_DIAMOND_DOWN = SVG_PUSHUP_DOWN;
+  const SVG_PIKE_1 = '<svg viewBox="0 0 100 70"><path d="M18,60 L48,26" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M48,26 L80,60" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M80,60 L90,52 L94,60" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="48" cy="26" r="5" fill="currentColor"/><circle cx="80" cy="60" r="5" fill="currentColor"/></svg>';
+  const SVG_PIKE_2 = '<svg viewBox="0 0 100 70"><path d="M18,60 L44,34" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M44,34 L78,58" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M78,58 L88,60 L94,64" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="28" cy="52" r="7" fill="currentColor"/><circle cx="44" cy="34" r="5" fill="currentColor"/><circle cx="78" cy="58" r="5" fill="currentColor"/></svg>';
+  const SVG_DIP_1 = '<svg viewBox="0 0 100 70"><rect x="10" y="30" width="22" height="7" rx="2" fill="none" stroke="var(--border)" stroke-width="4"/><path d="M28,30 L44,40" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M44,40 L44,20" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M44,40 L70,44 L70,62" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="44" cy="40" r="5" fill="currentColor"/><circle cx="70" cy="44" r="5" fill="currentColor"/><circle cx="44" cy="13" r="10" fill="currentColor"/></svg>';
+  const SVG_DIP_2 = '<svg viewBox="0 0 100 70"><rect x="10" y="30" width="22" height="7" rx="2" fill="none" stroke="var(--border)" stroke-width="4"/><path d="M28,30 L40,48" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M40,48 L40,28" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M40,48 L66,50 L66,64" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="40" cy="48" r="5" fill="currentColor"/><circle cx="66" cy="50" r="5" fill="currentColor"/><circle cx="40" cy="21" r="10" fill="currentColor"/></svg>';
+  const SVG_BACKEXT_1 = '<svg viewBox="0 0 100 60"><path d="M22,40 L78,40" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M22,40 L12,30" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M78,40 L90,44" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22" cy="38" r="5" fill="currentColor"/><circle cx="16" cy="30" r="8" fill="currentColor"/></svg>';
+  const SVG_BACKEXT_2 = '<svg viewBox="0 0 100 60"><path d="M30,42 L78,40" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,42 L15,22" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M78,40 L90,44" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="42" r="5" fill="currentColor"/><circle cx="15" cy="18" r="8" fill="currentColor"/></svg>';
+  const SVG_SUPERMAN_1 = '<svg viewBox="0 0 100 60"><path d="M28,42 L74,42" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M28,42 L14,40" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M74,42 L90,40" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="28" cy="42" r="5" fill="currentColor"/><circle cx="12" cy="40" r="8" fill="currentColor"/></svg>';
+  const SVG_SUPERMAN_2 = '<svg viewBox="0 0 100 60"><path d="M30,40 L72,40" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,40 L14,26" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M72,40 L88,26" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="40" r="5" fill="currentColor"/><circle cx="12" cy="24" r="8" fill="currentColor"/></svg>';
+  const SVG_HIREVPLANK_1 = '<svg viewBox="0 0 100 60"><path d="M25,30 L86,26" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M29,28 L29,52" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M86,26 L94,52" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="29" cy="30" r="5" fill="currentColor"/><circle cx="86" cy="26" r="5" fill="currentColor"/><circle cx="94" cy="18" r="10" fill="currentColor"/></svg>';
+  const SVG_HIREVPLANK_2 = SVG_HIREVPLANK_1;
+  const SVG_LUNGE_1 = '<svg viewBox="0 0 60 100"><path d="M30,25 L30,52" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,52 L20,70 L20,88" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,52 L44,66 L44,88" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="52" r="5" fill="currentColor"/><circle cx="30" cy="16" r="10" fill="currentColor"/></svg>';
+  const SVG_LUNGE_2 = '<svg viewBox="0 0 60 100"><path d="M32,25 L32,54" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M32,54 L16,66 L12,88" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M32,54 L46,72 L46,88" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="54" r="5" fill="currentColor"/><circle cx="46" cy="72" r="5" fill="currentColor"/><circle cx="32" cy="16" r="10" fill="currentColor"/></svg>';
+  const SVG_HIPLIFT_1 = '<svg viewBox="0 0 100 60"><path d="M20,44 L50,44" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M50,44 L68,44 L80,52" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="44" r="5" fill="currentColor"/><circle cx="12" cy="44" r="8" fill="currentColor"/></svg>';
+  const SVG_HIPLIFT_2 = '<svg viewBox="0 0 100 60"><path d="M20,46 L50,30" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M50,30 L66,44 L80,52" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="30" r="5" fill="currentColor"/><circle cx="12" cy="46" r="8" fill="currentColor"/></svg>';
+  const SVG_CALF_1 = '<svg viewBox="0 0 60 100"><path d="M30,24 L30,58" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,58 L30,84" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,28 L18,40 M30,28 L42,40" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M22,86 L38,86" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><circle cx="30" cy="58" r="5" fill="currentColor"/><circle cx="30" cy="15" r="10" fill="currentColor"/></svg>';
+  const SVG_CALF_2 = '<svg viewBox="0 0 60 100"><path d="M30,16 L30,50" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,50 L30,78" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M30,20 L18,32 M30,20 L42,32" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M26,84 L34,84" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><circle cx="30" cy="50" r="5" fill="currentColor"/><circle cx="30" cy="8" r="10" fill="currentColor"/></svg>';
+  const SVG_CRUNCH_1 = '<svg viewBox="0 0 100 60"><path d="M20,44 L44,44" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M20,40 L10,30" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M44,44 L60,44 L74,52 M60,44 L74,36" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="44" cy="44" r="5" fill="currentColor"/><circle cx="60" cy="44" r="5" fill="currentColor"/><circle cx="14" cy="26" r="9" fill="currentColor"/></svg>';
+  const SVG_CRUNCH_2 = '<svg viewBox="0 0 100 60"><path d="M26,44 L46,36" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M26,40 L20,26" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M46,36 L60,44 L74,52 M60,44 L74,36" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><circle cx="46" cy="36" r="5" fill="currentColor"/><circle cx="60" cy="44" r="5" fill="currentColor"/><circle cx="22" cy="22" r="9" fill="currentColor"/></svg>';
+
+  const FORM_GUIDES = {
+    'アブローラー（立ちコロ/膝コロ）': { labels:['開始','伸ばす'], frames:[SVG_ABROLLER_START, SVG_ABROLLER_END], tips:[
+      '肩が膝(または爪先)の真上に来る位置からスタート',
+      '転がすときは腰が反りすぎない・お尻が下がりすぎないよう体幹をまっすぐキープ',
+      '戻すのは腹筋主導で。反動を使わない',
+      '伸ばす範囲は「腰が反らずキープできるところ」まででOK'
+    ]},
+    'アブローラー（立ちコロ）': { labels:['開始','伸ばす'], frames:[SVG_ABROLLER_START, SVG_ABROLLER_END], tips:[
+      '立った状態から行う分、負荷が高い。無理せず膝コロから慣らしてもOK',
+      '転がすときは腰が反りすぎない・お尻が下がりすぎないよう体幹をまっすぐキープ',
+      '戻すのは腹筋主導で。反動を使わない'
+    ]},
+    'アブローラー（斜めコロ・腹斜筋狙い）': { labels:['開始','伸ばす'], frames:[SVG_ABROLLER_START, SVG_ABROLLER_END], tips:[
+      '斜め前方向に転がすことで脇腹(腹斜筋)に効かせる',
+      '体が横に倒れすぎないよう、腰はまっすぐを保つ',
+      '左右均等に方向を変えて行う'
+    ]},
+    '腕立て伏せ': { labels:['上','下'], frames:[SVG_PUSHUP_UP, SVG_PUSHUP_DOWN], tips:[
+      '手は肩幅よりやや広め、指先はまっすぐ前',
+      '体を頭から踵まで一直線に(お尻の上げ下げに注意)',
+      '肘は体から45度くらいの角度で曲げる(真横に開きすぎない)',
+      '胸が床に近づくまでしっかり下ろす'
+    ]},
+    '腕立て伏せ（ワイド/ナロー交互）': { labels:['上','下'], frames:[SVG_PUSHUP_UP, SVG_PUSHUP_DOWN], tips:[
+      'ワイドは肩幅より広く、ナローは肩幅より狭く手をつく',
+      '体を一直線に保つのは通常の腕立てと同じ',
+      'ナローは肘が外に開きやすいので、体に沿わせるよう意識'
+    ]},
+    'ダイヤモンドプッシュアップ': { labels:['上','下'], frames:[SVG_DIAMOND_UP, SVG_DIAMOND_DOWN], tips:[
+      '両手の親指と人差し指でひし形を作り、胸の真下に置く',
+      '肘は体に沿わせて曲げる(二の腕・胸の内側に効く)',
+      '体は一直線をキープ。きつければ膝つきでもOK'
+    ]},
+    'パイクプッシュアップ': { labels:['上','下'], frames:[SVG_PIKE_1, SVG_PIKE_2], tips:[
+      'お尻を高く上げて体で「く」の字を作る(肩に効かせる)',
+      '頭を斜め前の床に近づけるように下ろす',
+      '肩の真上に手を置くと安定する'
+    ]},
+    'リバースプッシュアップ（椅子ディップス）': { labels:['上','下'], frames:[SVG_DIP_1, SVG_DIP_2], tips:[
+      '椅子やベンチの縁に手をつき、体を前にずらす',
+      '肘を後ろに曲げてお尻を下げる(二の腕に効く)',
+      '肘は外に開かず後ろへ。肩がすくまないように'
+    ]},
+    'プランク': { labels:['良い例','悪い例'], frames:[SVG_PLANK_OK, SVG_PLANK_NG], tips:[
+      '肘は肩の真下、前腕を床につける(腕立ての姿勢ではない)',
+      '頭から踵まで一直線。お尻が上がったり腰が落ちたりしないように',
+      'お腹に力を入れ、呼吸は止めない'
+    ]},
+    'サイドプランク（左右）': { labels:['良い例','悪い例'], frames:[SVG_SIDEPLANK_OK, SVG_SIDEPLANK_NG], tips:[
+      '肘は肩の真下、前腕を床につける',
+      '体は横向きで一直線。腰を落とさず、天井方向にまっすぐ持ち上げる',
+      '左右均等に時間を取る'
+    ]},
+    '縄跳び': { labels:['着地','ジャンプ'], frames:[SVG_JUMPROPE_1, SVG_JUMPROPE_2], tips:[
+      '高く跳ばない。地面すれすれの小さいジャンプでOK',
+      '着地はつま先から、膝を軽く曲げてクッションする',
+      '縄は手首のスナップで回す(腕全体を振らない)'
+    ]},
+    '縄跳び（二重跳び挑戦）': { labels:['着地','ジャンプ'], frames:[SVG_JUMPROPE_1, SVG_JUMPROPE_2], tips:[
+      '二重跳びは通常より高く跳び、その場で縄を2回転させる',
+      '着地の衝撃が大きいので膝のクッションを意識',
+      'できない場合は通常跳びに戻してOK。無理は禁物'
+    ]},
+    'その場ステップ（踏み台昇降）': { labels:['乗る','踏み込む'], frames:[SVG_STEP_1, SVG_STEP_2], tips:[
+      '台を踏むときは足裏全体でしっかり乗る',
+      '膝が内側に入らないように注意',
+      '背筋を伸ばしたまま行う'
+    ]},
+    'その場駆け足': { labels:['右足','左足'], frames:[SVG_RUN_1, SVG_RUN_2], tips:[
+      '膝をしっかり引き上げる',
+      '着地は静かに、つま先寄りで衝撃を吸収',
+      '腕は自然に振ってリズムを取る'
+    ]},
+    'マウンテンクライマー': { labels:['プランク','引きつけ'], frames:[SVG_CLIMBER_1, SVG_CLIMBER_2], tips:[
+      '手は肩の真下、プランク姿勢をキープしたまま行う',
+      'お尻が跳ねて上がらないように',
+      '膝を胸に引きつけるとき腰が反らないように'
+    ]},
+    'クロスマウンテンクライマー（腹斜筋）': { labels:['プランク','クロス'], frames:[SVG_CLIMBER_1, SVG_CLIMBER_2], tips:[
+      '通常のマウンテンクライマーと同じ姿勢から、膝を対角の肘に向かって引き',
+      '腰が左右にねじれすぎないよう体幹はキープ'
+    ]},
+    'バイシクルクランチ': { labels:['右','左'], frames:[SVG_BICYCLE_1, SVG_BICYCLE_2], tips:[
+      '腰を床に押し付けたまま行う(反らさない)',
+      '肘で首を引っ張らない。視線はやや斜め上',
+      'ひねりは肩甲骨が浮くくらいと'
+    ]},
+    'クランチ': { labels:['下ろす','起こす'], frames:[SVG_CRUNCH_1, SVG_CRUNCH_2], tips:[
+      '膝を立てて仰向けに。手は頭の後ろか胸の前に',
+      '肩甲骨が床から浮くところまで起こす(腰は床につけたまま)',
+      '首を手で引っ張らない。腹筋の収縮を意識'
+    ]},
+    'ロシアンツイスト': { labels:['右','左'], frames:[SVG_TWIST_1, SVG_TWIST_2], tips:[
+      '上体を後ろに傾けすぎない(45度くらいが目安)',
+      '腰から回す。腕だけ振らない',
+      'きつい場合はかかとを床につけたままでもOK'
+    ]},
+    'レッグレイズ': { labels:['下ろす','上げる'], frames:[SVG_LEGRAISE_1, SVG_LEGRAISE_2], tips:[
+      '仰向けで腰の下に手を添えてもOK(腰が反るのを防ぐ)',
+      '脚を下ろすときも床につけきらず、腰が反る手前で止める',
+      '脚は垂直(真上)まで上げたら止める。反動を使わない'
+    ]},
+    'スクワット': { labels:['良い例','悪い例'], frames:[SVG_SQUAT_OK, SVG_SQUAT_NG], tips:[
+      '足は肩幅よりやや広めに開き、つま先はやや外向き',
+      '膝がつま先より前に出過ぎない。膝の向きはつま先と同じ方向',
+      'お尻を後ろに引くイメージでしゃがむ。背中は丸めない',
+      '太ももが床と平行になるくらいまで(無理のない範囲で)'
+    ]},
+    'ランジ（左右）': { labels:['直立','踏み込み'], frames:[SVG_LUNGE_1, SVG_LUNGE_2], tips:[
+      '足を前後に大きく開き、後ろ足の膝を床に近づける',
+      '前膝はつま先より前に出しすぎない',
+      '上体はまっすぐ。左右均等に行う'
+    ]},
+    'ヒップリフト（お尻上げ）': { labels:['下ろす','上げる'], frames:[SVG_HIPLIFT_1, SVG_HIPLIFT_2], tips:[
+      '仰向けで膝を立て、かかとをお尻に近づける',
+      'お尻を天井に向かって持ち上げ、体を肩〜膝まで一直線に',
+      '上げきったところでお尻をキュッと締める'
+    ]},
+    'カーフレイズ（かかと上げ）': { labels:['下ろす','上げる'], frames:[SVG_CALF_1, SVG_CALF_2], tips:[
+      'まっすぐ立ち、かかとを高く持ち上げる(ふくらはぎに効く)',
+      'ゆっくり下ろす。反動をつけない',
+      '段差の縁を使うと可動域が広がる'
+    ]},
+    'バックエクステンション（背筋伸ばし）': { labels:['下ろす','起こす'], frames:[SVG_BACKEXT_1, SVG_BACKEXT_2], tips:[
+      'うつ伏せになり、上体をゆっくり起こす(脊柱起立筋に効く)',
+      '反らせすぎない。腰を痛めないよう無理のない範囲で',
+      '手は頭の後ろか、体の横に'
+    ]},
+    'スーパーマン': { labels:['下ろす','上げる'], frames:[SVG_SUPERMAN_1, SVG_SUPERMAN_2], tips:[
+      'うつ伏せで両手両脚を同時に持ち上げる',
+      '背中〜お尻の筋肉を使う。反動を使わずゆっくり',
+      '首は反らさず、視線は床'
+    ]},
+    'ハイリバースプランク': { labels:['キープ',''], frames:[SVG_HIREVPLANK_1, SVG_HIREVPLANK_2], tips:[
+      '仰向けで手を肩の真下につき、体を一直線に持ち上げる',
+      'お尻が落ちないようにキープ(背中・お尻に効く)',
+      '首は自然に。肩に負担を感じたら中止'
+    ]}
+  };
+
+  const CAUTION_LEVELUP = {
+    'アブローラー（立ちコロ/膝コロ）': { caution:['腰が反った状態で耐えきれず落下すると腰を痛める。伸ばす範囲は「腰が反らずキープできる限界」までに留める','手首が痛む場合はパッド付きグリップや厚手のマットを使う'], levelUp:['膝コロで余裕が出たら、伸ばす距離を少しずつ伸ばす','慣れたら立ちコロ(膝を浮かせる)に移行する'] },
+    'アブローラー（立ちコロ）': { caution:['膝コロより負荷が大幅に高い。腰が反り始めたらすぐ戻す','初回は回数を控えめにし、翌日の腰の張りを見ながら増やす'], levelUp:['伸ばす動作を3〜4秒かけてゆっくり行うと負荷が上がる','戻す動作も腹筋だけでコントロールする'] },
+    'アブローラー（斜めコロ・腹斜筋狙い）': { caution:['斜め方向はバランスを崩しやすい。倒れそうなら無理せず止める','左右均等な回数で行う'], levelUp:['斜め角度を大きくするほど脇腹への負荷が上がる','通常のアブローラーと組み合わせる'] },
+    '腕立て伏せ': { caution:['手首が痛い場合はプッシュアップバー等で手首の角度を緩める','腰が反る・お尻が上がるのはフォーム崩れ。回数より姿勢を優先'], levelUp:['足を台に乗せる(デクライン)と負荷が上がる','下ろす動作を3秒かけてゆっくり行う'] },
+    '腕立て伏せ（ワイド/ナロー交互）': { caution:['ナロー時は肘が開きやすく肩・肘を痛めやすい。体に沿わせる','肩に違和感が出たら通常幅に戻す'], levelUp:['1レップごとにワイド→ナローと切り替えると高強度','テンポを落として丁寧に行う'] },
+    'ダイヤモンドプッシュアップ': { caution:['手首・肘に負担が集中しやすい。痛みが出たら通常の腕立てに戻す','肘が外に開くと効果が落ちる。体に沿わせる'], levelUp:['足を台に乗せて角度をつける','下ろす速度をゆっくりにする'] },
+    'パイクプッシュアップ': { caution:['頭を床にぶつけないよう、下ろす位置を確認しながら行う','肩に強い痛みが出たら中止'], levelUp:['足を台に乗せて上体をより垂直に近づける(肩への負荷UP)','可動域を深くする'] },
+    'リバースプッシュアップ（椅子ディップス）': { caution:['肩がすくむ・前に出ると肩を痛める。胸を張って行う','安定した椅子・ベンチを使う'], levelUp:['脚を遠くに伸ばすほど負荷が上がる','足を台に乗せる'] },
+    'プランク': { caution:['腰が反る・お尻が落ちると腰痛の原因。崩れたら休憩','呼吸を止めない'], levelUp:['片脚・片腕を浮かせて不安定要素を加える','キープ時間を10秒ずつ伸ばす'] },
+    'サイドプランク（左右）': { caution:['腰が落ちた状態で続けると腰・肩を痛める。崩れたら組み直す','肩の真下に肘があるか毎回確認'], levelUp:['上側の脚や腕を持ち上げる','キープ時間を伸ばす'] },
+    '縄跳び': { caution:['着地の衝撃が膝・足首に蓄積。固い床では靴を履く','息が上がりすぎたらペースを落とす'], levelUp:['テンポを上げる','片足跳びやサイドジャンプを混ぜる'] },
+    '縄跳び（二重跳び挑戦）': { caution:['着地衝撃が大きい。痛みが出たら通常跳びに戻す','連続失敗が続くなら休憩を挟む'], levelUp:['連続回数を記録して更新を狙う','三重跳びに挑戦'] },
+    'その場ステップ（踏み台昇降）': { caution:['踏み外し注意。安定した台を使い足元を見る','膝が内側に入らないように'], levelUp:['台を高くする/テンポを上げる','踏み込む脚に体重をしっかり乗せる'] },
+    'その場駆け足': { caution:['着地音・振動に注意(集合住宅)','膝・足首に違和感が出たら着地を静かに'], levelUp:['膝を高く上げる/テンポを上げる','腕振りを大きく'] },
+    'マウンテンクライマー': { caution:['お尻が跳ねると腰に負担。プランク姿勢を保つ','手首が痛ければ回数を減らす'], levelUp:['テンポを上げて有酸素効果を高める','膝を胸まで深く引きつける'] },
+    'クロスマウンテンクライマー（腹斜筋）': { caution:['腰がねじれすぎると腰痛の原因。体幹は正面を保つ','疲れてもフォームを崩さない範囲で'], levelUp:['膝を対角の肘に深く近づける','テンポを上げる'] },
+    'バイシクルクランチ': { caution:['首を手で引っ張らない','腰が反ると腰痛の原因。腰を床に押し付ける'], levelUp:['ひねりを深くする','脚を伸ばす角度を低くする'] },
+    'クランチ': { caution:['首を手で引っ張らない','反動を使わずゆっくり起こす'], levelUp:['起こしたところで一瞬止める','腕を頭上に伸ばして負荷を上げる'] },
+    'ロシアンツイスト': { caution:['腕だけで振ると肩を痛める。腰から回す','腰痛があればかかとを床につけて行う'], levelUp:['かかとを浮かせてバランス要素を加える','ペットボトル等を持って行う'] },
+    'レッグレイズ': { caution:['腰が反った状態で下ろすと腰を痛める。反る手前で止める','反動で振り上げない'], levelUp:['下ろす位置を床ギリギリまで下げる','アンクルウェイトをつける'] },
+    'スクワット': { caution:['膝がつま先より前/内に入ると膝を痛める。つま先と同じ向きに','腰を丸めない。胸を張り背中はまっすぐ'], levelUp:['太ももが床と平行になるまで深く','ゆっくりしゃがんで負荷時間を伸ばす'] },
+    'ランジ（左右）': { caution:['前膝がつま先より前に出過ぎないように','バランスを崩しやすいので壁の近くで行うと安全'], levelUp:['歩きながら行うウォーキングランジにする','沈み込みを深くする'] },
+    'ヒップリフト（お尻上げ）': { caution:['腰を反らせすぎない。お尻を締めて持ち上げる','首や肩で体を押し上げない'], levelUp:['片脚を伸ばして上げる(片脚ヒップリフト)','上げたところで数秒キープ'] },
+    'カーフレイズ（かかと上げ）': { caution:['反動をつけない。ゆっくり上下する','バランスを崩しやすいので壁に手を添えてもOK'], levelUp:['段差の縁を使って可動域を広げる','片脚ずつ行う'] },
+    'バックエクステンション（背筋伸ばし）': { caution:['反らせすぎると腰を痛める。無理のない範囲で','反動を使わずゆっくり'], levelUp:['起こしたところで一瞬キープ','手を頭の後ろに組んで負荷を上げる'] },
+    'スーパーマン': { caution:['首を反らさない。視線は床','反動を使わずゆっくり'], levelUp:['上げたところで数秒キープ','手足をより高く上げる'] },
+    'ハイリバースプランク': { caution:['肩に負担を感じたら中止','お尻が落ちないようにキープ'], levelUp:['片脚を上げる','キープ時間を伸ばす'] }
+  };
+
+  /* v8: 新イラストは clipPath の id を使うため、同じ絵が画面に複数出ても衝突しないよう描画ごとに id を付け直す */
+  let svgUid = 0;
+  function uniqSvg(svg){
+    if(svg.indexOf(' id="') < 0) return svg;
+    const sfx = '_' + (svgUid++).toString(36);
+    return svg.replace(/ id="([^"]+)"/g, ' id="$1'+sfx+'"').replace(/(href="#|url\(#)([^")]+)/g, '$1$2'+sfx);
+  }
+  function figCls(svg){ return /viewBox="0 0 100 60"/.test(svg) ? 'guide-fig wide' : 'guide-fig'; } /* v8 */
+  function guideHtml(name){
+    const g = FORM_GUIDES[name];
+    if(!g){ return '<div class="sub">この種目のガイドは準備中です</div>'; }
+    const extra = CAUTION_LEVELUP[name];
+    let extraHtml = '';
+    if(extra){
+      extraHtml = '<div class="guide-extra">'
+        + '<div class="guide-extra-label caution">⚠️ 要注意ポイント</div>'
+        + '<ul class="guide-tips">' + extra.caution.map(t=>'<li>'+t+'</li>').join('') + '</ul>'
+        + '<div class="guide-extra-label levelup">💪 負荷を上げたいときは</div>'
+        + '<ul class="guide-tips">' + extra.levelUp.map(t=>'<li>'+t+'</li>').join('') + '</ul>'
+        + '</div>';
+    }
+    let figs;
+    if(g.frames[1] && g.labels[1]){
+      figs = '<div class="guide-figs">'
+        + '<div class="'+figCls(g.frames[0])+'">'+uniqSvg(g.frames[0])+'<span>'+g.labels[0]+'</span></div>'
+        + '<div class="guide-arrow">→</div>'
+        + '<div class="'+figCls(g.frames[1])+'">'+uniqSvg(g.frames[1])+'<span>'+g.labels[1]+'</span></div>'
+        + '</div>';
+    } else {
+      figs = '<div class="guide-figs"><div class="'+figCls(g.frames[0])+'">'+uniqSvg(g.frames[0])+'<span>'+g.labels[0]+'</span></div></div>';
+    }
+    return figs
+      + '<ul class="guide-tips">' + g.tips.map(t=>'<li>'+t+'</li>').join('') + '</ul>'
+      + extraHtml;
+  }
+
+  /* ===== データモデル（ルーティン可変） ===== */
+  let uidCounter = Date.now();
+  function newId(){ return 'r' + (uidCounter++).toString(36); }
+
+  function defaultRoutines(){
+    return [
+      { id:newId(), label:'ルーティン①', exercises:[
+        {name:'腕立て伏せ', type:'reps', reps:15, sets:2},
+        {name:'アブローラー（立ちコロ/膝コロ）', type:'reps', reps:8, sets:3},
+        {name:'縄跳び', type:'time', seconds:180, sets:2}
+      ]},
+      { id:newId(), label:'ルーティン②', exercises:[
+        {name:'スクワット', type:'reps', reps:15, sets:3},
+        {name:'プランク', type:'time', seconds:45, sets:3},
+        {name:'バイシクルクランチ', type:'reps', reps:20, sets:2}
+      ]}
+    ];
+  }
+
+  function loadData(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){ return JSON.parse(raw); }
+    }catch(e){}
+    return null;
+  }
+  function saveData(d){ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+
+  let data = loadData();
+  if(!data) data = {};
+  // --- 旧スロット形式(slots)からルーティン形式(routines)へマイグレーション ---
+  if(!data.routines){
+    if(data.slots){
+      const slotLabels = { weekdaySunny:'平日晴れ', weekdayRain:'平日雨', holidaySunny:'休日晴れ', holidayRain:'休日雨', special:'特別' };
+      const routines = [];
+      Object.keys(data.slots).forEach(key=>{
+        const exs = data.slots[key];
+        if(exs && exs.length){
+          routines.push({ id:newId(), label: slotLabels[key] || key, exercises: exs });
+        }
+      });
+      data.routines = routines.length ? routines : defaultRoutines();
+      delete data.slots;
+    } else {
+      data.routines = defaultRoutines();
+    }
+  }
+  if(!data.routines.length) data.routines = defaultRoutines();
+  if(!data.logs) data.logs = {};
+  if(!data.bodyWeight) data.bodyWeight = 68;
+  if(data.restSame === undefined) data.restSame = 20;
+  if(data.restDiff === undefined) data.restDiff = 45;
+  if(!data.selectedRoutineId || !data.routines.find(r=>r.id===data.selectedRoutineId)){
+    data.selectedRoutineId = data.routines[0].id;
+  }
+  saveData(data);
+
+  function currentRoutine(){
+    return data.routines.find(r=>r.id===data.selectedRoutineId) || data.routines[0];
+  }
+
+  function todayKey(d){
+    d = d || new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function fmtTarget(ex){
+    if(ex.type === 'reps') return ex.reps+'回 × '+ex.sets+'セット';
+    const m = Math.floor(ex.seconds/60), s = ex.seconds%60;
+    const t = m>0 ? (m+'分'+(s>0?s+'秒':'')) : s+'秒';
+    return t + (ex.sets>1 ? ' × '+ex.sets+'セット' : '');
+  }
+
+  let audioCtx = null;
+  function ensureAudioCtx(){
+    if(!audioCtx){ try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){} }
+    return audioCtx;
+  }
+  /* v7: 音を「ラッパ風」に変更。
+     矩形波＋三角波を重ね、ローパスで角を落とし、短いアタックと減衰をつける。
+     旧版のサイン波の「ピー」が無機質で怖い、というフィードバック対応 */
+  function horn(freq, startAt, dur, vol){
+    const ctx = ensureAudioCtx();
+    if(!ctx) return;
+    const t0 = ctx.currentTime + (startAt||0);
+    const out = ctx.createGain();
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 2600;
+    lp.Q.value = 0.7;
+    const peak = vol || 0.16;
+    out.gain.setValueAtTime(0.0001, t0);
+    out.gain.exponentialRampToValueAtTime(peak, t0 + 0.015);
+    out.gain.setValueAtTime(peak, t0 + Math.max(0.02, dur*0.55));
+    out.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    lp.connect(out); out.connect(ctx.destination);
+    [['square',0.55],['triangle',1.0]].forEach(([type, mix])=>{
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t0);
+      g.gain.value = mix;
+      osc.connect(g); g.connect(lp);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.05);
+    });
+  }
+  function ready(){
+    const ctx = ensureAudioCtx();
+    if(!ctx) return false;
+    if(ctx.state === 'suspended') ctx.resume();
+    return true;
+  }
+  const N = { G4:392.0, C5:523.25, E5:659.25, G5:783.99, C6:1046.5 };
+  // 汎用（互換用）
+  function beep(freq, durationMs){
+    if(!ready()) return;
+    horn(freq||880, 0, (durationMs||200)/1000, 0.12);
+  }
+  // セット完了：パパーン（短く2音）
+  function playSetDoneBeep(){
+    if(!ready()) return;
+    horn(N.G4, 0.00, 0.09);
+    horn(N.C5, 0.11, 0.32);
+    if(navigator.vibrate) navigator.vibrate(120);
+  }
+  // カウントダウン：小さく「ポッ」
+  function playCountdownTick(){
+    if(!ready()) return;
+    horn(N.C5, 0, 0.07, 0.08);
+  }
+  // 開始の合図：「パッ」
+  function playGoBeep(){
+    if(!ready()) return;
+    horn(N.G5, 0, 0.14, 0.12);
+    if(navigator.vibrate) navigator.vibrate(80);
+  }
+  // 全メニュー完了：パパパパーン♪
+  function playFinishFanfare(){
+    if(!ready()) return;
+    horn(N.G4, 0.00, 0.09);
+    horn(N.G4, 0.12, 0.09);
+    horn(N.G4, 0.24, 0.09);
+    horn(N.C5, 0.36, 0.55, 0.18);
+    horn(N.E5, 0.36, 0.55, 0.08);
+    if(navigator.vibrate) navigator.vibrate([60,60,60,60,60,60,250]);
+  }
+
+  /* v7: 自前ポップアップ（confirm/alertの代わり）。Promiseでtrue/falseを返す */
+  const modalBack = document.getElementById('modalBack');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalMsg = document.getElementById('modalMsg');
+  const modalOk = document.getElementById('modalOk');
+  const modalCancel = document.getElementById('modalCancel');
+  let modalResolve = null;
+  function showModal(opts){
+    return new Promise(resolve=>{
+      if(modalResolve) modalResolve(false);
+      modalResolve = resolve;
+      modalTitle.textContent = opts.title || '';
+      modalMsg.textContent = opts.msg || '';
+      modalOk.textContent = opts.okText || 'OK';
+      modalOk.className = 'btn ' + (opts.danger ? 'btn-amber' : 'btn-primary');
+      if(opts.cancelText){
+        modalCancel.textContent = opts.cancelText;
+        modalCancel.style.display = '';
+      } else {
+        modalCancel.style.display = 'none';
+      }
+      modalBack.classList.add('open');
+    });
+  }
+  function closeModal(result){
+    modalBack.classList.remove('open');
+    const r = modalResolve; modalResolve = null;
+    if(r) r(result);
+  }
+  modalOk.addEventListener('click', ()=>closeModal(true));
+  modalCancel.addEventListener('click', ()=>closeModal(false));
+  modalBack.addEventListener('click', (e)=>{ if(e.target===modalBack) closeModal(false); });
+
+  const slotGrid = document.getElementById('slotGrid');
+  const menuTitle = document.getElementById('menuTitle');
+  const menuSub = document.getElementById('menuSub');
+  const exerciseList = document.getElementById('exerciseList');
+  const streakNum = document.getElementById('streakNum');
+  const weekCount = document.getElementById('weekCount');
+  const totalCount = document.getElementById('totalCount');
+  const startBtn = document.getElementById('startBtn');
+  const editSlotBtn = document.getElementById('editSlotBtn');
+  const renameRoutineBtn = document.getElementById('renameRoutineBtn');
+  const deleteRoutineBtn = document.getElementById('deleteRoutineBtn');
+
+  function renderSlotGrid(){
+    slotGrid.innerHTML = '';
+    data.routines.forEach(r=>{
+      const btn = document.createElement('div');
+      btn.className = 'slot-btn' + (r.id===data.selectedRoutineId ? ' active' : '');
+      btn.textContent = r.label;
+      btn.addEventListener('click', ()=>{
+        data.selectedRoutineId = r.id;
+        saveData(data);
+        renderHome();
+      });
+      slotGrid.appendChild(btn);
+    });
+    const addBtn = document.createElement('div');
+    addBtn.className = 'slot-btn add';
+    addBtn.textContent = '＋ 追加';
+    addBtn.addEventListener('click', ()=>{
+      const name = prompt('新しいルーティンの名前を入力してください', 'ルーティン'+(data.routines.length+1));
+      if(name && name.trim()){
+        const r = { id:newId(), label:name.trim(), exercises:[] };
+        data.routines.push(r);
+        data.selectedRoutineId = r.id;
+        saveData(data);
+        renderHome();
+      }
+    });
+    slotGrid.appendChild(addBtn);
+  }
+
+  function renderHome(){
+    renderSlotGrid();
+    const routine = currentRoutine();
+    const exs = routine.exercises;
+    menuTitle.textContent = routine.label;
+    if(exs.length===0){
+      menuSub.textContent = 'まだ種目がありません。「このセットを編集する」から作成してください';
+      exerciseList.innerHTML = '';
+      startBtn.style.display = 'none';
+    } else {
+      menuSub.textContent = '種目 '+exs.length+'つ';
+      exerciseList.innerHTML = '';
+      exs.forEach(ex=>{
+        const li = document.createElement('li');
+        li.className = 'clickable';
+        li.innerHTML = '<span class="ex-name linkish">'+ex.name+'</span><span class="ex-vol">'+fmtTarget(ex)+'</span>';
+        exerciseList.appendChild(li);
+
+        const guideRow = document.createElement('li');
+        guideRow.style.display = 'block';
+        guideRow.style.padding = '0';
+        guideRow.style.borderBottom = 'none';
+        const guideDiv = document.createElement('div');
+        guideDiv.className = 'inline-guide';
+        guideDiv.innerHTML = guideHtml(ex.name);
+        guideRow.appendChild(guideDiv);
+        exerciseList.appendChild(guideRow);
+
+        li.addEventListener('click', ()=>{ guideDiv.classList.toggle('open'); });
+      });
+      const kcalLi = document.createElement('li');
+      kcalLi.innerHTML = '<span class="ex-name" style="color:var(--lime)">推定消費カロリー</span><span class="ex-vol" style="color:var(--lime);font-weight:800">約'+calcMenuKcal(exs, data.bodyWeight)+'kcal</span>';
+      exerciseList.appendChild(kcalLi);
+      startBtn.style.display = 'block';
+    }
+
+    let streak = 0;
+    let d = new Date();
+    if(!data.logs[todayKey(d)]) d.setDate(d.getDate()-1);
+    while(data.logs[todayKey(d)]){ streak++; d.setDate(d.getDate()-1); }
+    streakNum.textContent = streak;
+
+    const now = new Date();
+    const dow = now.getDay();
+    const diffToMon = dow===0? 6 : dow-1;
+    const monday = new Date(now); monday.setDate(now.getDate()-diffToMon);
+    let wc = 0;
+    for(let i=0;i<7;i++){
+      const dd = new Date(monday); dd.setDate(monday.getDate()+i);
+      if(data.logs[todayKey(dd)]) wc++;
+    }
+    weekCount.textContent = wc+'/3';
+    totalCount.textContent = Object.keys(data.logs).length;
+  }
+
+  renameRoutineBtn.addEventListener('click', ()=>{
+    const routine = currentRoutine();
+    const name = prompt('ルーティン名を変更', routine.label);
+    if(name && name.trim()){
+      routine.label = name.trim();
+      saveData(data);
+      renderHome();
+    }
+  });
+  deleteRoutineBtn.addEventListener('click', ()=>{
+    if(data.routines.length <= 1){
+      alert('ルーティンは最低1つ必要です。削除できません。');
+      return;
+    }
+    const routine = currentRoutine();
+    if(confirm('「'+routine.label+'」を削除しますか？（種目内容も消えます）')){
+      data.routines = data.routines.filter(r=>r.id!==routine.id);
+      data.selectedRoutineId = data.routines[0].id;
+      saveData(data);
+      renderHome();
+    }
+  });
+
+  const homeScreen = document.getElementById('homeScreen');
+  const workoutScreen = document.getElementById('workoutScreen');
+  const builderScreen = document.getElementById('builderScreen');
+  const historyScreen = document.getElementById('historyScreen');
+  const settingsScreen = document.getElementById('settingsScreen');
+
+  const curExName = document.getElementById('curExName');
+  const curExTarget = document.getElementById('curExTarget');
+  const timerNum = document.getElementById('timerNum');
+  const timerLabel = document.getElementById('timerLabel');
+  const setDots = document.getElementById('setDots');
+  const setDoneBtn = document.getElementById('setDoneBtn');
+  const skipBtn = document.getElementById('skipBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const workoutGuideBody = document.getElementById('workoutGuideBody');
+
+  let flat = [];
+  let flatPos = 0;
+  let mode = 'ready';
+  let countdownInterval = null;
+  let paused = false;
+  let remainingSeconds = 0;
+
+  function buildFlat(exs){
+    flat = [];
+    exs.forEach((ex, exIndex)=>{
+      for(let s=0;s<ex.sets;s++) flat.push({exIndex, setIndex:s, ex});
+    });
+  }
+  function renderDots(){
+    setDots.innerHTML = '';
+    flat.forEach((item,i)=>{
+      const dot = document.createElement('div');
+      dot.className = 'dot' + (i<flatPos?' done':(i===flatPos?' active':''));
+      setDots.appendChild(dot);
+    });
+  }
+  function fmtClock(sec){
+    const m = Math.floor(sec/60), s = sec%60;
+    return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }
+
+  /* v7: トレーニング中フラグと離脱確認 */
+  let inWorkout = false;
+
+  function startWorkout(){
+    ensureAudioCtx();
+    const exs = currentRoutine().exercises;
+    buildFlat(exs);
+    flatPos = 0;
+    inWorkout = true;
+    // Androidの戻るボタン／スワイプ戻りを受け止めるため、履歴を1段積んでおく
+    try{ history.pushState({workout:true}, ''); }catch(e){}
+    homeScreen.style.display='none';
+    workoutScreen.style.display='block';
+    showCurrentSet();
+  }
+
+  // 「やめますか？」を出す。やめる→true / やめない→false
+  async function confirmQuitWorkout(){
+    const wasPaused = paused;
+    paused = true; // 確認中はタイマーを止める
+    const ok = await showModal({
+      title: 'セット途中です',
+      msg: 'トレーニングをやめますか？\n（今回の記録は残りません）',
+      okText: 'やめる',
+      cancelText: 'やめない',
+      danger: true
+    });
+    if(ok){
+      endWorkoutWithoutSave();
+      return true;
+    }
+    paused = wasPaused;
+    return false;
+  }
+
+  function endWorkoutWithoutSave(){
+    clearInterval(countdownInterval);
+    inWorkout = false;
+    mode = 'ready';
+    paused = false;
+    workoutScreen.style.display='none';
+  }
+
+  // 戻る操作（Androidの戻るボタン・ブラウザの戻る）
+  window.addEventListener('popstate', async ()=>{
+    if(!inWorkout) return;
+    // いったん履歴を積み直して画面に留まり、確認を出す
+    try{ history.pushState({workout:true}, ''); }catch(e){}
+    if(modalBack.classList.contains('open')) return;
+    const quit = await confirmQuitWorkout();
+    if(quit){
+      try{ history.back(); }catch(e){}
+      switchTab('home');
+    }
+  });
+
+  // タブを閉じる・再読み込み
+  window.addEventListener('beforeunload', (e)=>{
+    if(inWorkout){ e.preventDefault(); e.returnValue = ''; }
+  });
+
+  function showCurrentSet(){
+    if(flatPos >= flat.length){ finishWorkout(); return; }
+    const item = flat[flatPos];
+    curExName.textContent = item.ex.name;
+    curExTarget.textContent = 'セット '+(item.setIndex+1)+' / '+item.ex.sets;
+    workoutGuideBody.innerHTML = guideHtml(item.ex.name);
+    renderDots();
+    mode = 'work';
+    paused = false;
+    pauseBtn.textContent = '一時停止';
+    clearInterval(countdownInterval);
+
+    if(item.ex.type === 'time'){
+      remainingSeconds = item.ex.seconds;
+      timerLabel.textContent = '実施中（自動で次に進みます）';
+      timerNum.textContent = fmtClock(remainingSeconds);
+      playGoBeep();
+      countdownInterval = setInterval(tickWork, 1000);
+    } else {
+      timerLabel.textContent = '目標回数（できたら「セット完了」）';
+      timerNum.textContent = item.ex.reps+'回';
+      playGoBeep();
+    }
+  }
+
+  function tickWork(){
+    if(paused) return;
+    remainingSeconds--;
+    timerNum.textContent = fmtClock(remainingSeconds);
+    if(remainingSeconds<=3 && remainingSeconds>0) playCountdownTick();
+    if(remainingSeconds<=0){
+      clearInterval(countdownInterval);
+      playSetDoneBeep();
+      advance();
+    }
+  }
+
+  function advance(){
+    flatPos++;
+    if(flatPos >= flat.length){ finishWorkout(); return; }
+    const prevExIndex = flat[flatPos-1].exIndex;
+    const nextExIndex = flat[flatPos].exIndex;
+    const restLen = (nextExIndex !== prevExIndex) ? data.restDiff : data.restSame;
+    mode = 'rest';
+    paused = false;
+    pauseBtn.textContent = '一時停止';
+    remainingSeconds = restLen;
+    timerLabel.textContent = nextExIndex!==prevExIndex ? '種目切り替え中(休憩)' : '休憩';
+    timerNum.textContent = fmtClock(remainingSeconds);
+    clearInterval(countdownInterval);
+    curExName.textContent = '休憩中…';
+    curExTarget.textContent = '次: '+flat[flatPos].ex.name;
+    workoutGuideBody.innerHTML = guideHtml(flat[flatPos].ex.name);
+    renderDots();
+    if(restLen<=0){ showCurrentSet(); return; }
+    countdownInterval = setInterval(tickRest, 1000);
+  }
+
+  function tickRest(){
+    if(paused) return;
+    remainingSeconds--;
+    timerNum.textContent = fmtClock(remainingSeconds);
+    if(remainingSeconds<=3 && remainingSeconds>0) playCountdownTick();
+    if(remainingSeconds<=0){
+      clearInterval(countdownInterval);
+      showCurrentSet();
+    }
+  }
+
+  function finishWorkout(){
+    clearInterval(countdownInterval);
+    inWorkout = false;
+    mode = 'ready';
+    try{ if(history.state && history.state.workout) history.back(); }catch(e){}
+    const routine = currentRoutine();
+    const kcal = calcMenuKcal(routine.exercises, data.bodyWeight);
+    data.logs[todayKey()] = { slotKey: routine.id, slotLabel: routine.label, ts: Date.now(), kcal: kcal };
+    saveData(data);
+    workoutScreen.style.display='none';
+    homeScreen.style.display='block';
+    renderHome();
+    playFinishFanfare();
+    showModal({
+      title: 'お疲れさまでした！',
+      msg: 'ルーティン：'+routine.label+'\n消費カロリー目安：約'+kcal+'kcal\nあすけんの運動記録に入力してください。',
+      okText: 'OK'
+    });
+  }
+
+  startBtn.addEventListener('click', startWorkout);
+  setDoneBtn.addEventListener('click', ()=>{
+    if(mode==='work'){
+      clearInterval(countdownInterval);
+      playSetDoneBeep();
+      advance();
+    }
+  });
+  skipBtn.addEventListener('click', ()=>{
+    clearInterval(countdownInterval);
+    advance();
+  });
+  document.getElementById('quitWorkoutBtn').addEventListener('click', async ()=>{
+    const quit = await confirmQuitWorkout();
+    if(quit){
+      try{ if(history.state && history.state.workout) history.back(); }catch(e){}
+      switchTab('home');
+    }
+  });
+  pauseBtn.addEventListener('click', ()=>{
+    paused = !paused;
+    pauseBtn.textContent = paused ? '再開' : '一時停止';
+    timerLabel.textContent = paused ? '一時停止中' : (mode==='work' ? '実施中（自動で次に進みます）' : '休憩');
+  });
+
+  /* ===== ビルダー（カテゴリ別） ===== */
+  const builderTitle = document.getElementById('builderTitle');
+  const builderLibraryList = document.getElementById('builderLibraryList');
+  const builderSelectedList = document.getElementById('builderSelectedList');
+  const builderEmpty = document.getElementById('builderEmpty');
+  const saveBuilderBtn = document.getElementById('saveBuilderBtn');
+  const cancelBuilderBtn = document.getElementById('cancelBuilderBtn');
+
+  let draftExercises = [];
+  let editingRoutineId = null;
+
+  function openBuilder(routineId){
+    editingRoutineId = routineId;
+    const routine = data.routines.find(r=>r.id===routineId);
+    draftExercises = routine.exercises.map(ex=>Object.assign({}, ex));
+    builderTitle.textContent = routine.label + 'を編集';
+    homeScreen.style.display='none';
+    builderScreen.style.display='block';
+    renderBuilderLibrary();
+    renderBuilderSelected();
+  }
+
+  function renderBuilderLibrary(){
+    builderLibraryList.innerHTML = '';
+    CATEGORIES.forEach(cat=>{
+      const items = EXERCISE_LIBRARY.filter(e=>e.category===cat);
+      if(!items.length) return;
+      const head = document.createElement('div');
+      head.className = 'cat-head';
+      head.textContent = cat;
+      builderLibraryList.appendChild(head);
+
+      items.forEach(libEx=>{
+        const wrap = document.createElement('div');
+        const row = document.createElement('div');
+        row.className = 'set-row';
+        row.style.cursor = 'pointer';
+        const label = document.createElement('span');
+        label.className = 'name linkish';
+        label.textContent = libEx.name;
+        row.appendChild(label);
+        const addBtn = document.createElement('button');
+        addBtn.className = 'lib-add';
+        addBtn.textContent = '追加';
+        addBtn.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          const newEx = libEx.type==='reps'
+            ? {name:libEx.name, type:'reps', reps:libEx.defReps, sets:libEx.defSets}
+            : {name:libEx.name, type:'time', seconds:libEx.defSeconds, sets:libEx.defSets};
+          draftExercises.push(newEx);
+          lastMovedIndex = draftExercises.length-1;
+          renderBuilderSelected();
+          lastMovedIndex = -1;
+          addBtn.textContent = '追加済';
+          setTimeout(()=>{ addBtn.textContent = '追加'; }, 900);
+        });
+        row.appendChild(addBtn);
+        wrap.appendChild(row);
+
+        const guideDiv = document.createElement('div');
+        guideDiv.className = 'inline-guide';
+        guideDiv.innerHTML = guideHtml(libEx.name);
+        wrap.appendChild(guideDiv);
+        row.addEventListener('click', ()=>{ guideDiv.classList.toggle('open'); });
+
+        builderLibraryList.appendChild(wrap);
+      });
+    });
+  }
+
+  let lastMovedIndex = -1;
+  function moveDraft(i, dir){
+    const j = i + dir;
+    if(j<0 || j>=draftExercises.length) return;
+    const tmp = draftExercises[i];
+    draftExercises[i] = draftExercises[j];
+    draftExercises[j] = tmp;
+    lastMovedIndex = j;
+    renderBuilderSelected();
+    lastMovedIndex = -1;
+  }
+
+  function renderBuilderSelected(){
+    builderSelectedList.innerHTML = '';
+    builderEmpty.style.display = draftExercises.length===0 ? 'block' : 'none';
+    draftExercises.forEach((ex,i)=>{
+      const row = document.createElement('div');
+      row.className = 'sel-row' + (i===lastMovedIndex ? ' flash' : '');
+      const label = document.createElement('span');
+      label.className = 'name';
+      label.textContent = (i+1)+'. '+ex.name;
+      row.appendChild(label);
+
+      // v7: 並べ替え（↑↓）
+      const moveBtns = document.createElement('span');
+      moveBtns.className = 'move-btns';
+      const upBtn = document.createElement('button');
+      upBtn.className = 'move-btn'; upBtn.textContent = '↑'; upBtn.setAttribute('aria-label','上へ');
+      upBtn.disabled = (i===0);
+      upBtn.addEventListener('click', ()=> moveDraft(i, -1));
+      const downBtn = document.createElement('button');
+      downBtn.className = 'move-btn'; downBtn.textContent = '↓'; downBtn.setAttribute('aria-label','下へ');
+      downBtn.disabled = (i===draftExercises.length-1);
+      downBtn.addEventListener('click', ()=> moveDraft(i, +1));
+      moveBtns.appendChild(upBtn); moveBtns.appendChild(downBtn);
+      row.appendChild(moveBtns);
+
+      const controls = document.createElement('span');
+      controls.className = 'controls';
+      if(ex.type==='reps'){
+        controls.innerHTML =
+          '<input type="number" data-i="'+i+'" data-field="reps" value="'+ex.reps+'" min="1"> 回 × '+
+          '<input type="number" data-i="'+i+'" data-field="sets" value="'+ex.sets+'" min="1"> セット';
+      } else {
+        controls.innerHTML =
+          '<input type="number" data-i="'+i+'" data-field="seconds" value="'+ex.seconds+'" min="10"> 秒 × '+
+          '<input type="number" data-i="'+i+'" data-field="sets" value="'+ex.sets+'" min="1"> セット';
+      }
+      row.appendChild(controls);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'lib-remove';
+      removeBtn.textContent = '削除';
+      removeBtn.addEventListener('click', ()=>{ draftExercises.splice(i,1); renderBuilderSelected(); });
+      row.appendChild(removeBtn);
+
+      builderSelectedList.appendChild(row);
+      controls.querySelectorAll('input').forEach(inp=>{
+        inp.addEventListener('change', ()=>{
+          const val = parseInt(inp.value,10);
+          if(!isNaN(val)) draftExercises[i][inp.dataset.field] = val;
+        });
+      });
+    });
+  }
+
+  saveBuilderBtn.addEventListener('click', ()=>{
+    const routine = data.routines.find(r=>r.id===editingRoutineId);
+    routine.exercises = draftExercises.map(ex=>Object.assign({}, ex));
+    saveData(data);
+    builderScreen.style.display='none';
+    homeScreen.style.display='block';
+    renderHome();
+  });
+  cancelBuilderBtn.addEventListener('click', ()=>{
+    builderScreen.style.display='none';
+    homeScreen.style.display='block';
+    renderHome();
+  });
+  editSlotBtn.addEventListener('click', ()=> openBuilder(data.selectedRoutineId));
+
+  /* ===== 履歴 ===== */
+  const calGrid = document.getElementById('calGrid');
+  const calMonthLabel = document.getElementById('calMonthLabel');
+  const hist4wRate = document.getElementById('hist4wRate');
+  const histStreak = document.getElementById('histStreak');
+  const logList = document.getElementById('logList');
+
+  function renderHistory(){
+    const now = new Date();
+    const year = now.getFullYear(), month = now.getMonth();
+    calMonthLabel.textContent = year+'年'+(month+1)+'月';
+    calGrid.innerHTML = '';
+    const firstDay = new Date(year, month, 1);
+    const startOffset = firstDay.getDay();
+    const daysInMonth = new Date(year, month+1, 0).getDate();
+    for(let i=0;i<startOffset;i++) calGrid.appendChild(document.createElement('div'));
+    for(let day=1; day<=daysInMonth; day++){
+      const dd = new Date(year, month, day);
+      const key = todayKey(dd);
+      const cell = document.createElement('div');
+      cell.className = 'd' + (data.logs[key]?' done':'') + (key===todayKey()?' today':'');
+      cell.textContent = day;
+      calGrid.appendChild(cell);
+    }
+
+    let doneCount = 0;
+    for(let i=0;i<28;i++){
+      const dd = new Date(); dd.setDate(dd.getDate()-i);
+      if(data.logs[todayKey(dd)]) doneCount++;
+    }
+    hist4wRate.textContent = Math.round(doneCount/28*100)+'%';
+
+    const keys = Object.keys(data.logs).sort();
+    let maxStreak=0, curStreak=0, prevDate=null;
+    keys.forEach(k=>{
+      const d = new Date(k);
+      if(prevDate){
+        const diff = (d-prevDate)/(1000*60*60*24);
+        curStreak = diff===1 ? curStreak+1 : 1;
+      } else curStreak = 1;
+      maxStreak = Math.max(maxStreak, curStreak);
+      prevDate = d;
+    });
+    histStreak.textContent = maxStreak;
+
+    const now2 = new Date();
+    const dow2 = now2.getDay();
+    const diffToMon2 = dow2===0?6:dow2-1;
+    const monday2 = new Date(now2); monday2.setDate(now2.getDate()-diffToMon2);
+    let wKcal=0, tKcal=0;
+    for(let i=0;i<7;i++){
+      const dd = new Date(monday2); dd.setDate(monday2.getDate()+i);
+      const log = data.logs[todayKey(dd)];
+      if(log && log.kcal) wKcal += log.kcal;
+    }
+    Object.values(data.logs).forEach(log=>{ if(log.kcal) tKcal += log.kcal; });
+    document.getElementById('weekKcal').textContent = wKcal;
+    document.getElementById('totalKcal').textContent = tKcal;
+
+    logList.innerHTML = '';
+    const sortedKeys = Object.keys(data.logs).sort().reverse().slice(0,10);
+    if(sortedKeys.length===0){
+      logList.innerHTML = '<div class="sub">まだ記録がありません</div>';
+    }
+    sortedKeys.forEach(k=>{
+      const log = data.logs[k];
+      const row = document.createElement('div');
+      row.className = 'hist-item';
+      row.innerHTML = '<span>'+k+' ・ '+(log.slotLabel||log.menuKey||'-')+'</span><span style="color:var(--lime);font-weight:700">'+(log.kcal||0)+'kcal</span>';
+      logList.appendChild(row);
+    });
+  }
+
+  /* ===== 設定 ===== */
+  const resetBtn = document.getElementById('resetBtn');
+  const saveRestBtn = document.getElementById('saveRestBtn');
+
+  function renderSettings(){
+    document.getElementById('bodyWeightInput').value = data.bodyWeight;
+    document.getElementById('restSameInput').value = data.restSame;
+    document.getElementById('restDiffInput').value = data.restDiff;
+  }
+
+  document.getElementById('bodyWeightInput').addEventListener('change', (e)=>{
+    const bw = parseFloat(e.target.value);
+    if(!isNaN(bw) && bw>0){ data.bodyWeight = bw; saveData(data); }
+  });
+  saveRestBtn.addEventListener('click', ()=>{
+    const rs = parseInt(document.getElementById('restSameInput').value,10);
+    const rd = parseInt(document.getElementById('restDiffInput').value,10);
+    if(!isNaN(rs)) data.restSame = rs;
+    if(!isNaN(rd)) data.restDiff = rd;
+    saveData(data);
+    alert('休憩時間を保存しました。');
+  });
+  resetBtn.addEventListener('click', ()=>{
+    if(confirm('本当にすべての記録を消去しますか？ルーティン内容は残ります。')){
+      data.logs = {};
+      saveData(data);
+      renderHome();
+      renderHistory();
+      alert('記録をリセットしました。');
+    }
+  });
+
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  function switchTab(tab){
+    tabBtns.forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+    homeScreen.style.display = tab==='home' ? 'block':'none';
+    workoutScreen.style.display = 'none';
+    builderScreen.style.display = 'none';
+    historyScreen.style.display = tab==='history' ? 'block':'none';
+    settingsScreen.style.display = tab==='settings' ? 'block':'none';
+    if(tab==='home') renderHome();
+    if(tab==='history') renderHistory();
+    if(tab==='settings') renderSettings();
+  }
+  tabBtns.forEach(b=> b.addEventListener('click', async ()=>{
+    // v7: トレーニング中にタブを触ったら確認を出す
+    if(inWorkout){
+      const quit = await confirmQuitWorkout();
+      if(!quit) return;
+      try{ if(history.state && history.state.workout) history.back(); }catch(e){}
+    }
+    switchTab(b.dataset.tab);
+  }));
+
+  renderHome();
+})();
+</script>
+</body>
+</html>
