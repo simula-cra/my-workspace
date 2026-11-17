@@ -1,0 +1,10 @@
+exec(open('/home/user/my-workspace/kintore_illust/illust/generate_core.py').read())
+S['side_plank_1']=splank('ok'); S['side_plank_2']=splank('ng')
+S['side_plank_hipup_1']=splank('down'); S['side_plank_hipup_2']=splank('up')
+S['cross_mountain_climber_1']=xclimb(1); S['cross_mountain_climber_2']=xclimb(2)
+S['bicycle_crunch_1']=bicycle(1); S['bicycle_crunch_2']=bicycle(2)
+S['russian_twist_1']=rtwist(1); S['russian_twist_2']=rtwist(2)
+S['heel_touch_crunch_1']=heeltouch(1); S['heel_touch_crunch_2']=heeltouch(2)
+import pathlib
+for k,v in S.items(): pathlib.Path(f'/home/user/my-workspace/kintore_illust/illust/{k}.svg').write_text(v+'\n')
+print({k:len(v.encode()) for k,v in S.items()})
