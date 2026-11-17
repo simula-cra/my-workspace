@@ -346,38 +346,39 @@
 (function(){
   const STORAGE_KEY = 'workout_data_v2';
 
+  /* v9: METは身体活動のメッツ表（Compendium）の自重トレ基準にそろえた：軽い2.8／ふつう3.8／きつい8.0。キープ系3.0、有酸素は種目ごと */
   const MET_TABLE = {
-    'アブローラー（立ちコロ/膝コロ）': {met:8.0, secPerRep:3},
-    'アブローラー（立ちコロ）': {met:8.0, secPerRep:3},
-    'アブローラー（斜めコロ・腹斜筋狙い）': {met:8.0, secPerRep:3},
-    '腕立て伏せ': {met:8.0, secPerRep:2.5},
-    '腕立て伏せ（ワイド/ナロー交互）': {met:8.0, secPerRep:2.5},
-    'ダイヤモンドプッシュアップ': {met:8.0, secPerRep:2.5},
-    'パイクプッシュアップ': {met:8.0, secPerRep:2.5},
+    'アブローラー（立ちコロ/膝コロ）': {met:3.8, secPerRep:3}, /* v9: MET見直し */
+    'アブローラー（立ちコロ）': {met:5.0, secPerRep:3}, /* v9: MET見直し */
+    'アブローラー（斜めコロ・腹斜筋狙い）': {met:3.8, secPerRep:3}, /* v9: MET見直し */
+    '腕立て伏せ': {met:3.8, secPerRep:2.5}, /* v9: MET見直し */
+    '腕立て伏せ（ワイド/ナロー交互）': {met:3.8, secPerRep:2.5}, /* v9: MET見直し */
+    'ダイヤモンドプッシュアップ': {met:3.8, secPerRep:2.5}, /* v9: MET見直し */
+    'パイクプッシュアップ': {met:3.8, secPerRep:2.5}, /* v9: MET見直し */
     '壁腕立て': {met:2.8, secPerRep:2.5}, /* v9 */
     '膝つき腕立て': {met:3.8, secPerRep:2.5}, /* v9 */
-    'リバースプッシュアップ（椅子ディップス）': {met:5.0, secPerRep:2.5},
-    'プランク': {met:4.0, secPerRep:0},
-    'サイドプランク（左右）': {met:4.0, secPerRep:0},
-    '縄跳び': {met:12.0, secPerRep:0},
+    'リバースプッシュアップ（椅子ディップス）': {met:3.8, secPerRep:2.5}, /* v9: MET見直し */
+    'プランク': {met:3.0, secPerRep:0}, /* v9: MET見直し */
+    'サイドプランク（左右）': {met:3.0, secPerRep:0}, /* v9: MET見直し */
+    '縄跳び': {met:8.8, secPerRep:0}, /* v9: MET見直し */
     '縄跳び（二重跳び挑戦）': {met:12.0, secPerRep:0},
-    'その場ステップ（踏み台昇降）': {met:8.0, secPerRep:0},
+    'その場ステップ（踏み台昇降）': {met:5.0, secPerRep:0}, /* v9: MET見直し */
     'その場駆け足': {met:8.0, secPerRep:0},
     'マウンテンクライマー': {met:8.0, secPerRep:2},
     'クロスマウンテンクライマー（腹斜筋）': {met:8.0, secPerRep:2.5},
-    'バイシクルクランチ': {met:6.0, secPerRep:2},
-    'クランチ': {met:5.0, secPerRep:2.5},
-    'ロシアンツイスト': {met:5.0, secPerRep:2},
+    'バイシクルクランチ': {met:3.8, secPerRep:2}, /* v9: MET見直し */
+    'クランチ': {met:3.8, secPerRep:2.5}, /* v9: MET見直し */
+    'ロシアンツイスト': {met:3.8, secPerRep:2}, /* v9: MET見直し */
     'サイドプランク・ヒップアップ（左右）': {met:3.8, secPerRep:2.5}, /* v9 */
     'ヒールタッチクランチ': {met:3.8, secPerRep:1.5}, /* v9 */
-    'レッグレイズ': {met:4.0, secPerRep:3},
+    'レッグレイズ': {met:3.8, secPerRep:3}, /* v9: MET見直し */
     'スクワット': {met:5.0, secPerRep:3},
     'ランジ（左右）': {met:5.0, secPerRep:3},
-    'ヒップリフト（お尻上げ）': {met:4.0, secPerRep:3},
-    'カーフレイズ（かかと上げ）': {met:4.0, secPerRep:2},
-    'バックエクステンション（背筋伸ばし）': {met:4.0, secPerRep:3},
-    'スーパーマン': {met:4.0, secPerRep:3},
-    'ハイリバースプランク': {met:4.0, secPerRep:0}
+    'ヒップリフト（お尻上げ）': {met:3.8, secPerRep:3}, /* v9: MET見直し */
+    'カーフレイズ（かかと上げ）': {met:2.8, secPerRep:2}, /* v9: MET見直し */
+    'バックエクステンション（背筋伸ばし）': {met:3.8, secPerRep:3}, /* v9: MET見直し */
+    'スーパーマン': {met:3.8, secPerRep:3}, /* v9: MET見直し */
+    'ハイリバースプランク': {met:3.0, secPerRep:0} /* v9: MET見直し */
   };
   function getMet(name){ return MET_TABLE[name] || {met:6.0, secPerRep:3}; }
   function calcKcalForExercise(ex, bw){
@@ -776,7 +777,7 @@
   }
   if(!data.routines.length) data.routines = defaultRoutines();
   if(!data.logs) data.logs = {};
-  if(!data.bodyWeight) data.bodyWeight = 68;
+  if(!data.bodyWeight) data.bodyWeight = 60; /* v9: 初期値68kg→60kg（保存済みの体重はそのまま） */
   if(data.restSame === undefined) data.restSame = 20;
   if(data.restDiff === undefined) data.restDiff = 45;
   if(!data.selectedRoutineId || !data.routines.find(r=>r.id===data.selectedRoutineId)){
