@@ -262,3 +262,99 @@ def hiplift(n):
     side_figure(f,k,far_leg=dict(knee=add(knee,(1.6,0.2)),ank=add(ank,(1.6,0)),heel=(21.6,53.6),ball=(26.6,54.4),toe=(29.6,54.8)))
     L.head=oldh; globals()['head']=oldh
     return f.svg('0 0 100 60','ヒップリフト '+('お尻を下ろす' if n==1 else '肩から膝まで一直線'))
+ROLLER=lambda x,y=51.2:f'<g><line x1="{x-5.5}" y1="{y}" x2="{x+5.5}" y2="{y}" stroke="#8C8C8C" stroke-width="1.6" stroke-linecap="round"></line><circle cx="{x}" cy="{y}" r="4.2" fill="#3A3E41" stroke="#8C8C8C" stroke-width="1.2"></circle><circle cx="{x}" cy="{y}" r="1" fill="#8C8C8C"></circle></g>'
+def roller_side(n,kind):
+    f=Fig(f'{kind}{n}'); f.raw(FLOOR_H)
+    if kind=='ak':
+        knee=(30,52.2); ank=(13,52.6); ft=dict(heel=(12,50.6),ball=(10,54.2),toe=(8,54.8))
+        if n==1: hip=(34,34.5); N=(52,30.5); rx=56
+        else: hip=(46,45.5); N=(71,41.6); rx=86
+    else:
+        ank=(16,51.2); ft=dict(heel=(13.4,53.4),ball=(20,54.4),toe=(23,54.8))
+        if n==1: hip=(27,24.5); knee=(22,38); N=(46,38.5); rx=40
+        else: knee=(30,49); hip=(45,46.2); N=(70,41.2); rx=86
+    if kind=='ak': pass
+    sh=add(N,(-0.6,2.6)); wr=(rx-1.2,47.6); elb=mul(add(sh,wr),0.5); fing=(rx+1.2,46.4)
+    u=norm(sub(N,hip)); head=add(N,mul(u,6.4)); head=(head[0]+0.8,head[1]+1.6)
+    th=math.degrees(math.atan2(u[1],u[0]))+90
+    tor=[N,mul(add(N,hip),0.5),hip]
+    k=dict(N=N,hip=hip,sh=sh,elb=elb,wr=wr,fing=fing,knee=knee,ank=ank,head=head,ht=th,torso=tor,hc_neck=hpt(head,th,-1.2,3.2),**ft)
+    c,a=bone_pt(N,hip,0.55,4.0); f.plan('torso',[(c[0],c[1],6.0,2.8,a)])
+    f.raw(ROLLER(rx))
+    side_figure(f,k,far_arm=dict(elb=add(elb,(-2,0.3)),wr=add(wr,(-1.6,0)),fing=add(fing,(-1.6,0))))
+    lab={'ak':('アブローラー 膝コロ',('膝をついて構える','腕を前に伸ばす')),'as':('アブローラー 立ちコロ',('立って前屈しローラーをつく','体を一直線に伸ばす'))}[kind]
+    return f.svg('0 0 100 60',lab[0]+' '+lab[1][n-1])
+def roller_top(n):
+    f=Fig(f'ao{n}')
+    # top view, knees at bottom, body extends upward (and to the upper-left in frame 2)
+    ang=math.radians(-90 if n==1 else -125)
+    base=(52,50); L=lambda d:(base[0]+math.cos(ang)*d, base[1]+math.sin(ang)*d)
+    nx,ny=-math.sin(ang),math.cos(ang)
+    hip=L(10 if n==1 else 12); N=L(26 if n==1 else 34); head=L(32 if n==1 else 40)
+    for s_ in (-1,1):
+        kn=(base[0]+nx*4.2*s_, base[1]+ny*4.2*s_)
+        f.part(limb([(kn[0],kn[1]+6),kn],[[(0,2.4,2.4),(1,3.0,3.0)]],0.6,0.4))
+        f.part(limb([kn,(hip[0]+nx*3.4*s_,hip[1]+ny*3.4*s_)],[[(0,3.2,3.2),(1,4.2,4.2)]],0.5,0.5))
+    f.plan('torso',[(*L(17 if n==1 else 21),6.5,2.4,math.degrees(ang)+90+(0 if n==1 else 20))])
+    f.part(limb([hip,N],[[(0,6.0,6.0),(0.7,8.0,8.0),(1,8.4,8.4)]],0.4,0.4),name='torso')
+    seam(f,hip,mul(add(hip,N),0.5),N,6.6,6.6)
+    rp=L(48 if n==1 else 60)
+    for s_ in (-1,1):
+        shp=(N[0]+nx*7*s_,N[1]+ny*7*s_)
+        f.part(limb([shp,(rp[0]+nx*2.4*s_,rp[1]+ny*2.4*s_)],[[(0,2.6,2.6),(1,1.6,1.6)]],0.6,0.6))
+    f.part(cr([(head[0]+4.6*math.cos(t/16*2*math.pi),head[1]+4.6*math.sin(t/16*2*math.pi)) for t in range(16)]),name='head')
+    f.raw(f'<g transform="rotate({math.degrees(ang)+90:.0f} {rp[0]:.1f} {rp[1]:.1f})"><rect x="{rp[0]-6:.1f}" y="{rp[1]-2.6:.1f}" width="12" height="5.2" rx="2" fill="#3A3E41" stroke="#8C8C8C" stroke-width="1.2"></rect></g>')
+    return f.svg('0 0 100 60','アブローラー 斜めコロ 真上から '+('開始' if n==1 else '斜め前へ伸ばす'))
+def jumprope(n):
+    f=Fig(f'jr{n}'); f.raw(FLOOR_V)
+    lift=0 if n==1 else 5
+    hipy=55-lift
+    rope=('M17 58 Q16 99 30 97.5 Q44 99 43 58' if n==1 else 'M17 56 Q15 4 30 3 Q45 4 43 56')
+    if n==2: f.raw(f'<path d="{rope}" fill="none" stroke="#8C8C8C" stroke-width="0.9"></path>')
+    for s_ in (-1,1):
+        hx=30+s_*3.4
+        f.part(limb([(hx,hipy),(30+s_*4.2,hipy+18),(30+s_*4.0,hipy+36)],[[(0,4.0,4.0),(1,3.0,3.0)],[(0,2.9,2.9),(0.3,3.2,3.2),(1,1.6,1.6)]],0.4,0.5),name='leg')
+        seam(f,(hx,hipy),(30+s_*4.2,hipy+18),(30+s_*4.0,hipy+36),2.8,2.8)
+        fx=30+s_*4.4; fy=hipy+38
+        f.part(cr([(fx-2.2,fy-1.2),(fx+2.2,fy-1.2),(fx+2.6,fy+1.4),(fx-2.6,fy+1.4)]))
+    f.plan('leg',[(30+s*4.1,hipy+24,1.8,5.0,0) for s in (-1,1)])
+    f.part(limb([(30,hipy+2),(30,hipy-24)],[[(0,7.4,7.4),(0.5,6.2,6.2),(0.85,8.6,8.6),(1,8.6,8.6)]],0.4,0.4),name='torso')
+    seam(f,(30,hipy+4),(30,hipy-10),(30,hipy-24),6.6,6.6)
+    f.part(cr([(30+4.6*math.cos(t/16*2*math.pi),hipy-31+5.2*math.sin(t/16*2*math.pi)) for t in range(16)]))
+    for s_ in (-1,1):
+        shp=(30+s_*8,hipy-21); el=(30+s_*10.6,hipy-9); hd=(30+s_*13,hipy+1)
+        f.part(limb([shp,el,hd],[[(0,2.6,2.6),(1,2.0,2.0)],[(0,1.9,1.9),(1,1.4,1.4)]],0.6,0.5))
+        seam(f,shp,el,hd,1.9,1.9)
+    if n==1: f.raw(f'<path d="{rope}" fill="none" stroke="#8C8C8C" stroke-width="0.9"></path>')
+    return f.svg('0 0 60 100','縄跳び 正面から '+('着地' if n==1 else '小さくジャンプ'))
+BOX='<rect x="33" y="82.5" width="22" height="12.4" rx="1.2" fill="#3A3E41" stroke="#8C8C8C" stroke-width="1.0"></rect>'
+def stepup(n):
+    f=Fig(f'su{n}'); f.raw(FLOOR_V); f.raw(BOX)
+    if n==1:
+        hip=(27,52); N=(29.5,26.5); head=(31.4,19.6); sh=(30,29)
+        knee=(41,64.5); ank=(40,80.8); ft=dict(heel=(37.4,82.3),ball=(44.6,82.4),toe=(47.6,82.6))
+        far=dict(knee=(25,71.6),ank=(20,91.2),heel=(17,93.4),ball=(24.6,94.4),toe=(27.6,94.8))
+    else:
+        hip=(42,40); N=(42.6,14.4); head=(43.8,7.4); sh=(43.2,17)
+        knee=(42.8,60); ank=(42,79.6); ft=dict(heel=(39.4,82.3),ball=(46.6,82.4),toe=(49.6,82.6))
+        far=dict(knee=(41.6,60),ank=(40.6,79.6),heel=(38,82.3),ball=(45.2,82.4),toe=(48.2,82.6))
+    elb=add(sh,(1.2,11)); wr=add(sh,(2.4,21)); fing=add(wr,(0.6,4.6))
+    tor=[N,mul(add(N,hip),0.5),hip]
+    k=dict(N=N,hip=hip,sh=sh,elb=elb,wr=wr,fing=fing,knee=knee,ank=ank,head=head,ht=4,torso=tor,hc_neck=hpt(head,4,-1.2,3.2),**ft)
+    c,a=bone_pt(hip,knee,0.5,-2.6); f.plan('leg',[(c[0],c[1],6.5,2.3,a)])
+    c2,a2=bone_pt(tor[1],hip,0.9,3.4); f.plan('torso',[(c2[0],c2[1],3.4,4.2,a2)])
+    side_figure(f,k,far_leg=far,far_arm=dict(elb=add(elb,(-1.4,0)),wr=add(wr,(-1.4,0)),fing=add(fing,(-1.4,0))))
+    return f.svg('0 0 60 100','踏み台昇降 '+('片足を台に乗せる' if n==1 else '台に乗り上がる'))
+def highknee(n):
+    f=Fig(f'hk{n}'); f.raw(FLOOR_V)
+    hip=(30,52); N=(30.6,26.5); head=(31.8,19.6); sh=(31,29)
+    up=dict(knee=(44,47),ank=(42,66),heel=(39.4,67.4),ball=(46.4,69.2),toe=(49,70.4))
+    down=dict(knee=(29.4,72),ank=(28,91.4),heel=(25.2,93.6),ball=(33,94.4),toe=(36,94.8))
+    armF=dict(elb=(37,37.5),wr=(44,31),fing=(46.6,27.6)); armB=dict(elb=(25.6,39.6),wr=(19.6,47.4),fing=(17.6,51.2))
+    near,far=(up,down) if n==1 else (down,up)
+    nearArm,farArm=(armB,armF) if n==1 else (armF,armB)
+    tor=[N,mul(add(N,hip),0.5),hip]
+    k=dict(N=N,hip=hip,sh=sh,head=head,ht=4,torso=tor,hc_neck=hpt(head,4,-1.2,3.2),**nearArm,**near)
+    c,a=bone_pt(hip,near['knee'],0.5,-2.6 if n==1 else -2.6); f.plan('leg',[(c[0],c[1],6.5,2.3,a)])
+    side_figure(f,k,far_leg=far,far_arm=farArm)
+    return f.svg('0 0 60 100','その場駆け足 '+('右膝を上げる' if n==1 else '左膝を上げる'))
