@@ -358,3 +358,97 @@ def highknee(n):
     c,a=bone_pt(hip,near['knee'],0.5,-2.6 if n==1 else -2.6); f.plan('leg',[(c[0],c[1],6.5,2.3,a)])
     side_figure(f,k,far_leg=far,far_arm=farArm)
     return f.svg('0 0 60 100','その場駆け足 '+('右膝を上げる' if n==1 else '左膝を上げる'))
+# ---------- more prone (head right) ----------
+def prone2(n,kind):
+    f=Fig(f'{kind}{n}'); f.raw(FLOOR_H)
+    hip=(41,49.6); N=(66.5,48.6); sh=(67.5,50.6); head=(77,49.4); ht=95
+    knee=(24,50.8); ank=(8,52); ft=dict(heel=(8.4,49.4),ball=(4.4,53.6),toe=(1.2,54.6))
+    lifted = (n==2)
+    if lifted: N=(66,46.6); sh=(67,48.6); head=(76.5,46.2); ht=88
+    if kind=='pt':   # prone T raise: arm out to the side -> seen from side as a short arm; lifted arm points up
+        if not lifted: elb,wr,fing=(67.8,53.4),(68.2,55.0),(68.4,55.6)
+        else: elb,wr,fing=(67.6,40.6),(68,32.4),(68.2,28.6)
+        far=None
+    elif kind=='sa':  # reverse snow angel
+        if not lifted: elb,wr,fing=(80,48.8),(91,47.4),(96.6,46.8)
+        else: elb,wr,fing=(56,45.4),(45,44.4),(40.4,44.4)
+    else:            # prone cobra: arms by sides, back
+        if not lifted: elb,wr,fing=(56,53.4),(45,53.8),(40.6,54)
+        else: elb,wr,fing=(56,46.8),(45.6,45.2),(41,44.8)
+    tor=[N,mul(add(N,hip),0.5),hip]
+    k=dict(N=N,hip=hip,sh=sh,elb=elb,wr=wr,fing=fing,knee=knee,ank=ank,head=head,ht=ht,torso=tor,hc_neck=hpt(head,ht,-1.2,3.2),**ft)
+    c,a=bone_pt(N,tor[1],0.3,3.6); f.plan('torso',[(c[0],c[1],6.0,2.4,a)])
+    side_figure(f,k)
+    lab={'pt':('プローンTレイズ',('腕を真横に下ろす','腕を真横のまま浮かす')),'sa':('リバーススノーエンジェル',('腕を頭上に伸ばす','腕を腰の横へ下ろす')),'pc':('プローンコブラ',('うつ伏せ','胸を浮かせて肩甲骨を寄せる'))}[kind]
+    return f.svg('0 0 100 60',lab[0]+' '+lab[1][n-1])
+# ---------- bird dog (side, all fours, head right) ----------
+def birddog(n):
+    f=Fig(f'bd{n}'); f.raw(FLOOR_H)
+    hip=(40,33.5); N=(64,33); sh=(64.6,35.4); head=(72,30.6)
+    knee=(40,52.6); ank=(24,53.2); ft=dict(heel=(22,52),ball=(19.6,54.6),toe=(17.4,55))
+    if n==1:
+        elb,wr,fing=(64.8,44),(65,53),(70.5,54.4)
+        fl=dict(knee=(41.4,52.6),ank=(25.4,53.2),heel=(23.4,52),ball=(21,54.6),toe=(18.8,55))
+        fa=dict(elb=(63.4,44),wr=(63.6,53),fing=(69,54.4))
+    else:
+        elb,wr,fing=(75,33.2),(85,33),(90.4,33)
+        fl=dict(knee=(23,33.6),ank=(7.6,33.6),heel=(7.4,31.4),ball=(4.4,35.4),toe=(2.4,35.8))
+        fa=dict(elb=(63.4,44),wr=(63.6,53),fing=(69,54.4))
+    tor=[N,mul(add(N,hip),0.5),hip]
+    k=dict(N=N,hip=hip,sh=sh,elb=elb,wr=wr,fing=fing,knee=knee,ank=ank,head=head,ht=40,torso=tor,hc_neck=hpt(head,40,-1.2,3.2),**ft)
+    c,a=bone_pt(tor[1],hip,0.6,3.8); f.plan('torso',[(c[0],c[1],6.0,2.4,a)])
+    side_figure(f,k,far_leg=fl,far_arm=fa)
+    return f.svg('0 0 100 60','バードドッグ '+('四つん這い' if n==1 else '右腕と左脚を水平に伸ばす'))
+# ---------- hollow body (supine, head right) ----------
+def hollow(n):
+    f=Fig(f'hb{n}'); f.raw(FLOOR_H)
+    hip=(45,51.2); N=(66,47.2); sh=add(N,(-0.8,2.0))
+    u=norm(sub(N,hip)); head=add(N,mul(u,6.4)); head=(head[0],head[1]-0.8)
+    face=(u[1],-u[0]); th=math.degrees(math.atan2(face[1],face[0]))
+    if n==1:
+        knee=(37,37.2); ank=(24,40.6); ft=dict(heel=(23,42.6),ball=(21.6,38.4),toe=(20.8,36.2))
+        elb,wr,fing=(56.5,41.6),(47,39.6),(42.6,38.8)
+    else:
+        knee=(28,47.2); ank=(12,43.2); ft=dict(heel=(11,45.2),ball=(9.4,41.2),toe=(8.6,38.8))
+        elb,wr,fing=(78,42),(88,38.2),(93,36.6)
+    tor=[N,mul(add(N,hip),0.5),hip]
+    k=dict(N=N,hip=hip,sh=sh,elb=elb,wr=wr,fing=fing,knee=knee,ank=ank,head=head,ht=th,torso=tor,hc_neck=add(head,mul(u,-3.2)),**ft)
+    c,a=bone_pt(N,hip,0.6,0.0); f.plan('torso',[(c[0],c[1],6.0,2.8,a)])
+    import figlib as L
+    oldh=L.head; globals()['head']=lambda c,t,s=1.0: head_m(c,t,s); L.head=globals()['head']
+    side_figure(f,k)
+    L.head=oldh; globals()['head']=oldh
+    return f.svg('0 0 100 60','ホロウボディホールド '+('膝を曲げた楽な形' if n==1 else '手足を伸ばした形'))
+# ---------- split squat (vertical) ----------
+def splitsq(n):
+    f=Fig(f'ss{n}'); f.raw(FLOOR_V)
+    if n==2:
+        hip=(27,70); N=(27.6,44); head=(29,37); sh=(28.2,46.5); elb=(27.4,58); wr=(28.2,68); fing=(28.8,73)
+        knee=(46,71); ank=(45,91.4); far=dict(knee=(20,88.6),ank=(3.4,91.6),heel=(2.6,89.8),ball=(5.6,94.4),toe=(8.6,94.9))
+    else:
+        hip=(26,56); N=(26.6,30); head=(28,23); sh=(27.2,32.5); elb=(26.4,44); wr=(27.2,54); fing=(27.8,59)
+        knee=(36,74); ank=(45,91.4); far=dict(knee=(15.6,74),ank=(4.4,91.6),heel=(2.6,89.8),ball=(5.6,94.4),toe=(8.6,94.9))
+    ft=dict(heel=(42.4,93.6),ball=(50,94.4),toe=(53,94.8))
+    tor=[N,mul(add(N,hip),0.5),hip]
+    k=dict(N=N,hip=hip,sh=sh,elb=elb,wr=wr,fing=fing,knee=knee,ank=ank,head=head,ht=0,torso=tor,hc_neck=hpt(head,0,-1.2,3.2),**ft)
+    c,a=bone_pt(hip,knee,0.5,-2.6); f.plan('leg',[(c[0],c[1],7.0,2.4,a)])
+    c2,a2=bone_pt(tor[1],hip,0.9,3.6); f.plan('torso',[(c2[0],c2[1],3.6,4.4,a2)])
+    side_figure(f,k,far_leg=far,far_arm=dict(elb=add(elb,(-1.2,0)),wr=add(wr,(-1.2,0)),fing=add(fing,(-1.2,0))))
+    return f.svg('0 0 60 100','スプリットスクワット '+('前後に開いて立つ' if n==1 else 'まっすぐ沈む'))
+# ---------- silent burpee (side) ----------
+def burpee(n):
+    f=Fig(f'sb{n}'); f.raw(FLOOR_H)
+    if n==1:
+        hip=(46,36); N=(60,24.6); sh=(60.4,27.4); head=(66.6,20.4); ht=50
+        knee=(58,38.4); ank=(45,52.6); ft=dict(heel=(42.4,53.4),ball=(49,54.4),toe=(52,54.8))
+        elb,wr,fing=(62,40),(64,52.8),(70.4,54.4)
+        c,a=bone_pt(hip,knee,0.5,-2.4); f.plan('leg',[(c[0],c[1],6.0,2.2,a)])
+        k=dict(N=N,hip=hip,sh=sh,elb=elb,wr=wr,fing=fing,knee=knee,ank=ank,head=head,ht=ht,torso=[N,mul(add(N,hip),0.5),hip],hc_neck=hpt(head,ht,-1.2,3.2),**ft)
+    else:
+        sh=(66,29); d=norm((-57,22)); hip=add(sh,mul(d,25)); knee=add(hip,mul(d,18)); ank=add(knee,mul(d,18))
+        N=add(sh,mul(d,-3.2)); N=(N[0],N[1]-0.6); head=add(add(N,mul(d,-6.6)),(0.6,0.6))
+        k=dict(N=N,hip=hip,sh=sh,elb=(65,41),wr=(64,52.8),fing=(70.4,54.4),knee=knee,ank=ank,heel=(ank[0]-2,ank[1]-3),ball=(ank[0]+0.3,ank[1]+3.4),toe=(ank[0]+3.2,54.4),head=head,ht=69,torso=[N,mul(add(N,hip),0.5),hip],hc_neck=hpt(head,69,-1.2,3.2))
+        c,a=bone_pt(hip,knee,0.5,-2.4); f.plan('leg',[(c[0],c[1],6.0,2.2,a)])
+        c2,a2=bone_pt(k['torso'][1],hip,0.3,-4.0); f.plan('torso',[(c2[0],c2[1],6.0,2.4,a2)])
+    side_figure(f,k,far_arm=dict(elb=add(k['elb'],(-2.2,0)),wr=add(k['wr'],(-2.2,0)),fing=add(k['fing'],(-2.2,0))))
+    return f.svg('0 0 100 60','静かなバーピー '+('しゃがんで手をつく' if n==1 else '足を下げてプランク'))
