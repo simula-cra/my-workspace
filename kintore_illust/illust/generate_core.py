@@ -184,3 +184,81 @@ def lying(n,kind):
     if kind=='lr' and n==2: f.raw(ARROW_UP(30,46,36))
     nm={'cr':('クランチ',('寝た姿勢','肩甲骨を浮かせる')),'lr':('レッグレイズ',('脚を床すれすれまで下ろす','脚を垂直まで上げる'))}[kind]
     return f.svg('0 0 100 60',nm[0]+' '+nm[1][n-1])
+# ---------- prone (head right): superman / back extension ----------
+def prone_side(n,kind):
+    f=Fig(f'{kind}{n}'); f.raw(FLOOR_H)
+    hip=(41,49.6); N=(66.5,48.6); sh=(67.5,50.6); head=(77,49.4); ht=95
+    knee=(24,50.8); ank=(8,52); ft=dict(heel=(8.4,49.4),ball=(4.4,53.6),toe=(1.2,54.6))
+    if kind=='sm':
+        elb,wr,fing=(81,53.2),(92.5,53.8),(98.6,54.4)
+        if n==2:
+            N=(66,45.6); sh=(67,47.6); head=(76.5,44.6); ht=82
+            elb,wr,fing=(80,43.6),(91,41.2),(97,40.2)
+            knee=(24,48.6); ank=(8.5,45.6); ft=dict(heel=(8.8,43.2),ball=(4.6,47.4),toe=(1.6,48.2))
+    else:
+        if n==2: N=(65.5,42); sh=(66.5,44.2); head=(75,38.8); ht=70
+        elb=add(sh,(6.5,-5.5 if n==1 else -6.8)); wr=add(head,(-3.6,-3.6)); fing=add(head,(-1.2,-5.6))
+    tor=[N,mul(add(N,hip),0.5),hip]
+    k=dict(N=N,hip=hip,sh=sh,elb=elb,wr=wr,fing=fing,knee=knee,ank=ank,head=head,ht=ht,torso=tor,hc_neck=hpt(head,ht,-1.2,3.2),**ft)
+    c,a=bone_pt(tor[1],hip,0.55,3.6); f.plan('torso',[(c[0],c[1],6.0,2.4,a)])
+    side_figure(f,k)
+    lab={'sm':('スーパーマン',('うつ伏せで手足を伸ばす','手足を同時に浮かす')),'be':('バックエクステンション',('うつ伏せ','上体を起こす'))}[kind]
+    return f.svg('0 0 100 60',lab[0]+' '+lab[1][n-1])
+# ---------- high reverse plank (supine, head right) ----------
+def hrplank(kind):
+    f=Fig(f'hr{kind}'); f.raw(FLOOR_H)
+    sh=(76,31.5); ank=(15,50.2)
+    if kind=='ng': hip=(46,47.5); knee=(30,49.2)
+    else:
+        d=norm(sub(ank,sh)); hip=add(sh,mul(d,25)); knee=add(hip,mul(d,18))
+    d0=norm(sub(hip,sh)); u=mul(d0,-1)
+    N=add(sh,mul(d0,-3.0)); N=(N[0],N[1]-0.4)
+    head=add(N,mul(u,6.6)); face=(u[1],-u[0]); th=math.degrees(math.atan2(face[1],face[0]))
+    k=dict(N=N,hip=hip,sh=sh,elb=(76.6,42.4),wr=(77,53.2),fing=(71.5,54.4),knee=knee,ank=ank,heel=(14,53.4),ball=(17.6,48.6),toe=(18.6,46),head=head,ht=th,
+           torso=[N,mul(add(N,hip),0.5) if kind!='ng' else add(mul(add(N,hip),0.5),(0,2.2)),hip],hc_neck=add(head,mul(u,-3.2)))
+    if kind!='ng':
+        c,a=bone_pt(k['torso'][1],hip,0.75,-3.8); f.plan('torso',[(c[0],c[1],6.5,2.4,a)])
+    import figlib as L
+    oldh=L.head; globals()['head']=lambda c,t,s=1.0: head_m(c,t,s); L.head=globals()['head']
+    side_figure(f,k,far_arm=dict(elb=(74.4,42.4),wr=(74.8,53.2),fing=(69.3,54.4)))
+    L.head=oldh; globals()['head']=oldh
+    f.raw(OKT if kind=='ok' else NGT)
+    return f.svg('0 0 100 60','ハイリバースプランク '+('良い例 一直線' if kind=='ok' else '悪い例 お尻が落ちる'),ng=(kind=='ng'))
+# ---------- lunge / calf raise (vertical) ----------
+def standing(n,kind):
+    f=Fig(f'{kind}{n}'); f.raw(FLOOR_V)
+    if kind=='lu' and n==2:
+        hip=(27,70); N=(27.6,44); head=(29,37); sh=(28.2,46.5); elb=(27.4,58); wr=(28.2,68); fing=(28.8,73)
+        knee=(46,71); ank=(45,91.4); ft=dict(heel=(42.4,93.6),ball=(50,94.4),toe=(53,94.8))
+        far=dict(knee=(20,88.6),ank=(3.4,91.6),heel=(2.6,89.8),ball=(5.6,94.4),toe=(8.6,94.9))
+    else:
+        lift=4.2 if (kind=='ca' and n==2) else 0
+        hip=(30,52-lift); N=(30.4,26-lift); head=(31.6,19-lift); sh=(31,28.5-lift); elb=(30.4,40-lift); wr=(31,50.6-lift); fing=(31.6,55.6-lift)
+        knee=(30.8,72-lift); ank=(30,91.4-lift)
+        ft=dict(heel=(27.2,93.6),ball=(35,94.4),toe=(38,94.8)) if lift==0 else dict(heel=(28,89.6),ball=(34.6,94.4),toe=(37.6,94.9))
+        far=dict(knee=add(knee,(-1.2,0)),ank=add(ank,(-1.4,0)),heel=add(ft['heel'],(-1.4,0)),ball=add(ft['ball'],(-1.4,0)),toe=add(ft['toe'],(-1.4,0)))
+    tor=[N,mul(add(N,hip),0.5),hip]
+    k=dict(N=N,hip=hip,sh=sh,elb=elb,wr=wr,fing=fing,knee=knee,ank=ank,head=head,ht=0,torso=tor,hc_neck=hpt(head,0,-1.2,3.2),**ft)
+    if kind=='lu':
+        c,a=bone_pt(hip,knee,0.5,-2.6); f.plan('leg',[(c[0],c[1],7.0,2.4,a)])
+        c2,a2=bone_pt(tor[1],hip,0.9,3.6); f.plan('torso',[(c2[0],c2[1],3.6,4.4,a2)])
+    else:
+        c,a=bone_pt(knee,ank,0.3,1.9); f.plan('leg',[(c[0],c[1],5.0,1.8,a)])
+    side_figure(f,k,far_leg=far,far_arm=dict(elb=add(elb,(-1.2,0)),wr=add(wr,(-1.2,0)),fing=add(fing,(-1.2,0))))
+    lab={'lu':('ランジ',('直立','前に踏み込む')),'ca':('カーフレイズ',('かかとを下ろす','かかとを上げる'))}[kind]
+    return f.svg('0 0 60 100',lab[0]+' '+lab[1][n-1])
+# ---------- hip lift (supine, head right) ----------
+def hiplift(n):
+    f=Fig(f'hl{n}'); f.raw(FLOOR_H)
+    N=(70,50.8); sh=(68.5,52.4); head=(77,49.6)
+    hip=(45,51.2) if n==1 else (45,38.6)
+    knee=(30,38.2) if n==1 else (29,36.5); ank=(22,51.6)
+    u=norm(sub(N,hip)); face=(u[1],-u[0]); th=math.degrees(math.atan2(face[1],face[0]))
+    tor=[N,mul(add(N,hip),0.5),hip]
+    k=dict(N=N,hip=hip,sh=sh,elb=(58,53.6),wr=(50,54),fing=(46,54.4),knee=knee,ank=ank,heel=(20,53.6),ball=(25,54.4),toe=(28,54.8),head=head,ht=th,torso=tor,hc_neck=add(head,mul(u,-3.2)))
+    c,a=bone_pt(tor[1],hip,0.85,-3.6); f.plan('torso',[(c[0],c[1],4.0,3.6,a)])
+    import figlib as L
+    oldh=L.head; globals()['head']=lambda c,t,s=1.0: head_m(c,t,s); L.head=globals()['head']
+    side_figure(f,k,far_leg=dict(knee=add(knee,(1.6,0.2)),ank=add(ank,(1.6,0)),heel=(21.6,53.6),ball=(26.6,54.4),toe=(29.6,54.8)))
+    L.head=oldh; globals()['head']=oldh
+    return f.svg('0 0 100 60','ヒップリフト '+('お尻を下ろす' if n==1 else '肩から膝まで一直線'))
